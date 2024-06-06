@@ -27,7 +27,9 @@
     "northrook/elements": "dev-main"
   },
   "require-dev": {
-    "symfony/var-dumper": "^7.0",
+    "symfony/deprecation-contracts": "@stable",
+    "symfony/error-handler": "@stable",
+    "symfony/var-dumper": "@stable",
     "northrook/symfony-core-bundle": "dev-main"
   }
 }

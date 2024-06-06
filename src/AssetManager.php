@@ -4,8 +4,8 @@ namespace Northrook\Asset;
 
 use InvalidArgumentException;
 use LogicException;
-use Northrook\Core\Support\Normalize;
-use Northrook\Core\Type\Path;
+use Northrook\Support\Str\PathFunctions;
+use Northrook\Type\Path;
 use Northrook\Logger\Log;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -18,13 +18,14 @@ use Symfony\Component\VarExporter\VarExporter;
 
 class AssetManager
 {
+    use PathFunctions;
+
     /** Default Options for the {@see AssetManager} */
     private const OPTIONS = [
         'cacheKey'       => 'assets', // Default cache key
         'cacheTtl'       => 0,        // Default cache TTL, in seconds
         'onOPcacheError' => 'log',    // ignore|log|throw
     ];
-
 
     /** Singleton {@see AssetManager} instance */
     private static AssetManager $instance;
@@ -34,8 +35,8 @@ class AssetManager
 
 
     /** @var array<string,array> */
-    private array $inventory = [];
-    private int   $added     = 0;
+    private array $inventory;
+    private int   $updated   = 0;
 
     public readonly string $projectRoot;
     public readonly string $publicRoot;
@@ -65,11 +66,11 @@ class AssetManager
         $this->options = array_merge( AssetManager::OPTIONS, $options );
 
         // Assign paths
-        $this->assetManifestPath = Normalize::path( $assetManifestPath );
-        $this->projectRoot       = Normalize::path( $projectRoot );
-        $this->publicRoot        = Normalize::path( $publicRoot );
-        $this->publicAssets      = Normalize::path( $publicAssets );
-        $this->cachePath         = Normalize::path( $cachePath );
+        $this->assetManifestPath = $this::normalizePath( $assetManifestPath );
+        $this->projectRoot       = $this::normalizePath( $projectRoot );
+        $this->publicRoot        = $this::normalizePath( $publicRoot );
+        $this->publicAssets      = $this::normalizePath( $publicAssets );
+        $this->cachePath         = $this::normalizePath( $cachePath );
 
         // Load the Inventory
         $this->inventory = $this->assetInventory();
@@ -79,7 +80,6 @@ class AssetManager
 
         AssetManager::$instance = $this;
     }
-
 
     /**
      * Get the {@see AssetManager} instance.
@@ -92,6 +92,41 @@ class AssetManager
         );
     }
 
+    /**
+     * Get the {@see AssetManager} cache adapter.
+     *
+     * @return AdapterInterface
+     */
+    public static function cache() : AdapterInterface {
+        return AssetManager::get()->cache;
+    }
+
+    final public function asset(
+        string $class,      // The className of the asset, so we can instantiate it if needed
+        array  $meta,       // Contains the asset's metadata, like the type, description, etc.
+               ...$_
+    ) : void {
+
+        $id = $meta[ 'assetID' ];
+
+        $asset = $this->inventory[ 'assets' ][ $id ] ?? false;
+
+        // Store a copy of each asset in var/assets/assetID/filename.timestamp.ext
+        // This asset may be optimised when lossless compression is used
+        // In the manifest below, we reference each asset by date
+        // Keep a talley of the history, and allow for a waning when a given asset exceeds a certain depth of history
+        // May be worth keeping a history of the manifest as well
+        // Not sure how to detect where each asset is actively used, could be simple as an array with "last seen" urls and timestamps
+        // They could expire over time, and an option to actively scan all templates be the more precise option when required
+
+        $this->inventory[ 'assets' ][ $id ] = [
+            ... $meta,
+            'class'     => $class,
+            ... $_,
+            'timestamp' => time(),
+        ];
+        $this->updated++;
+    }
 
 
     /**
@@ -140,7 +175,6 @@ class AssetManager
     }
 
 
-
     private function assetInventory() : array {
 
         $inventory = new Path( $this->assetManifestPath );
@@ -167,15 +201,23 @@ class AssetManager
     public static function updateAssetInventory() : void {
         $manager = AssetManager::get();
 
-        if ( $manager->added === 0 ) {
+        if ( $manager->updated === 0 ) {
             return;
         }
 
         $manager->inventory[ 'count' ] = count( $manager->inventory[ 'assets' ] );
+        $manager->inventory[ 'updated' ] = time();
 
         $manager->updateAssetInventoryManifest(
             ( new Path( $manager->assetManifestPath ) )->value,
             $manager->inventory,
+        );
+
+        Log::Info(
+            'Updated the asset inventory.',
+            [
+                'count' => $manager->inventory[ 'count' ],
+            ],
         );
     }
 
