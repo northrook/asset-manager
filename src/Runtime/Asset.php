@@ -2,17 +2,13 @@
 
 namespace Northrook\Asset\Runtime;
 
-use LogicException;
-use Northrook\Asset\AssetManager;
+use Northrook\HTML\Attributes;
+use Northrook\Logger\Log;
 use Northrook\Support\Str;
 use Northrook\Type\Path;
 use Northrook\Type\URL;
-use Northrook\Logger\Log;
-use stdClass;
 use Stringable;
-use Symfony\Component\Config\Definition\Loader\ProtectedDefinitionFileLoader;
 use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Uid\Ulid;
 use Symfony\Contracts\Cache\ItemInterface;
 
 
@@ -25,12 +21,13 @@ use Symfony\Contracts\Cache\ItemInterface;
  */
 abstract class Asset implements Stringable
 {
+    public string $test = 'test';
     private array $meta;
 
     protected readonly string $assetHTML;
 
-    protected readonly AssetManager $manager;
-    protected readonly Path | URL   $source;
+    protected readonly Manager    $manager;
+    protected readonly Path | URL $source;
 
     protected string $path;
 
@@ -48,7 +45,7 @@ abstract class Asset implements Stringable
         ?int            $ttl = null,
     ) {
 
-        $asset = AssetManager::cache()->get(
+        $asset = Manager::cache()->get(
             $this::cacheKey( $source, $attributes ),
             function ( ItemInterface $asset ) use (
                 $source, $properties, $meta, $ttl,
@@ -108,7 +105,7 @@ abstract class Asset implements Stringable
 
         $this->assignProperties( $properties );
 
-        $this->manager = AssetManager::get();
+        $this->manager = Manager::get();
 
         $this->source = $this->setSource( $source );
 
@@ -198,6 +195,9 @@ abstract class Asset implements Stringable
         return strtolower( substr( $this::class, strrpos( $this::class, '\\' ) + 1 ) );
     }
 
+    final protected function attributeString() : string {
+        return new Attributes( $this->attributes );
+    }
 
     final protected function attributeID() : ?string {
 

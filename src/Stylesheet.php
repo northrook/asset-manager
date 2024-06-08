@@ -3,7 +3,6 @@
 namespace Northrook\Asset;
 
 use Northrook\Asset\Runtime\Asset;
-use Northrook\Core\Element\Attributes;
 use Northrook\Support\Minify;
 use Northrook\Logger\Log;
 use Symfony\Component\Filesystem\Exception\IOException;
@@ -48,7 +47,7 @@ final class Stylesheet extends Asset
             unset( $this->attributes[ 'inline' ] );
         }
 
-        $attributes = Attributes::from( $this->attributes, true );
+        $attributes = $this->attributeString();
 
         return $inline ? "<style $attributes>{$inline}</style>" : "<link $attributes>";
     }
