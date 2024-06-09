@@ -1,7 +1,8 @@
 <?php
 
-namespace Northrook\Asset\Runtime;
+namespace Northrook\AssetManager;
 
+use Northrook\AssetManager;
 use Northrook\HTML\Attributes;
 use Northrook\Logger\Log;
 use Northrook\Support\Str;
@@ -21,15 +22,12 @@ use Symfony\Contracts\Cache\ItemInterface;
  */
 abstract class Asset implements Stringable
 {
-    public string $test = 'test';
-    private array $meta;
-
-    protected readonly string $assetHTML;
-
-    protected readonly Manager    $manager;
-    protected readonly Path | URL $source;
-
-    protected string $path;
+    private array                   $meta;
+    protected readonly string       $assetHTML;
+    protected readonly AssetManager $manager;
+    protected readonly Path | URL   $source;
+    protected string                $path;
+    public string                   $test = 'test';
 
     /**
      * @param string  $source      A path to the asset source file
@@ -45,7 +43,7 @@ abstract class Asset implements Stringable
         ?int            $ttl = null,
     ) {
 
-        $asset = Manager::cache()->get(
+        $asset = AssetManager::cache()->get(
             $this::cacheKey( $source, $attributes ),
             function ( ItemInterface $asset ) use (
                 $source, $properties, $meta, $ttl,
@@ -74,8 +72,7 @@ abstract class Asset implements Stringable
         $this->attributes = $asset[ 'attributes' ];
     }
 
-    private
-    function assignProperties(
+    private function assignProperties(
         array $properties,
     ) : void {
         foreach ( $properties as $name => $value ) {
@@ -96,8 +93,7 @@ abstract class Asset implements Stringable
         }
     }
 
-    private
-    function initialize(
+    private function initialize(
         string $source,
         array  $meta = [],
         array  $properties = [],
@@ -105,7 +101,7 @@ abstract class Asset implements Stringable
 
         $this->assignProperties( $properties );
 
-        $this->manager = Manager::get();
+        $this->manager = AssetManager::get();
 
         $this->source = $this->setSource( $source );
 

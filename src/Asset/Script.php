@@ -2,13 +2,13 @@
 
 namespace Northrook\Asset;
 
-use Northrook\Asset\Runtime\Asset;
-use Northrook\Support\Minify;
+use Northrook\AssetManager\Asset;
 use Northrook\Logger\Log;
+use Northrook\Support\Minify;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
-final class Stylesheet extends Asset
+final class Script extends Asset
 {
     protected bool $inline = false;
 
@@ -23,20 +23,18 @@ final class Stylesheet extends Asset
      *    }           $attributes
      * @param array   $meta
      * @param bool    $inline
-     * @param ?int    $ttl
+     * @param ?int     $ttl
      *
-     * @return Stylesheet
+     * @return Script
      */
     public static function asset(
         string $source,
-        array  $attributes = [
-            'rel' => 'stylesheet',
-        ],
+        array  $attributes = [],
         array  $meta = [],
         bool   $inline = false,
         ?int   $ttl = null,
-    ) : Stylesheet {
-        return new Stylesheet( $source, $attributes, $meta, [ 'inline' => $inline ], $ttl );
+    ) : Script {
+        return new Script( $source, $attributes, $meta, [ 'inline' => $inline ], $ttl );
     }
 
     public function render() : string {
@@ -49,7 +47,7 @@ final class Stylesheet extends Asset
 
         $attributes = $this->attributeString();
 
-        return $inline ? "<style $attributes>{$inline}</style>" : "<link $attributes>";
+        return $inline ? "<script $attributes>{$inline}</script>" : "<script $attributes></script>";
     }
 
 
@@ -61,17 +59,16 @@ final class Stylesheet extends Asset
             return [ 'inline' => $inline ];
         }
 
-        return [ 'href' => $this->href() ];
+        return [ 'src' => $this->src() ];
     }
 
-    private function href() : string {
+    private function src() : string {
         return $this->getAssetUrl() . '?v=' . $this->version();
     }
 
     private function inlineAssetSource() : ?string {
-
         try {
-            return Minify::styles( ( new Filesystem() )->readFile( $this->source->value ) );
+            return Minify::scripts( ( new Filesystem() )->readFile( $this->source->value ) );
         }
         catch ( IOException $IOException ) {
             Log::Warning(
@@ -86,4 +83,5 @@ final class Stylesheet extends Asset
 
         return null;
     }
+
 }

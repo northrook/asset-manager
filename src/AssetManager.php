@@ -1,6 +1,6 @@
 <?php
 
-namespace Northrook\Asset\Runtime;
+namespace Northrook;
 
 use InvalidArgumentException;
 use LogicException;
@@ -16,19 +16,19 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\VarExporter\Exception\ExceptionInterface;
 use Symfony\Component\VarExporter\VarExporter;
 
-class Manager
+class AssetManager
 {
     use PathFunctions;
 
-    /** Default Options for the {@see Manager} */
+    /** Default Options for the {@see AssetManager} */
     private const OPTIONS = [
         'cacheKey'       => 'assets', // Default cache key
         'cacheTtl'       => 0,        // Default cache TTL, in seconds
         'onOPcacheError' => 'log',    // ignore|log|throw
     ];
 
-    /** Singleton {@see Manager} instance */
-    private static Manager $instance;
+    /** Singleton {@see AssetManager} instance */
+    private static AssetManager $instance;
 
     private readonly string $assetManifestPath;
     private readonly array  $options;
@@ -58,12 +58,12 @@ class Manager
         array             $options = [],
     ) {
         // Ensure the Asset Manager is not instantiated twice
-        if ( isset( Manager::$instance ) ) {
+        if ( isset( AssetManager::$instance ) ) {
             throw new LogicException( 'The Asset Manager has already been instantiated.' );
         }
 
         // Assign options
-        $this->options = array_merge( Manager::OPTIONS, $options );
+        $this->options = array_merge( AssetManager::OPTIONS, $options );
 
         // Assign paths
         $this->assetManifestPath = $this::normalizePath( $assetManifestPath );
@@ -78,27 +78,27 @@ class Manager
         // Assign the cache adapter
         $this->cache = $this->assetCache( $cache );
 
-        Manager::$instance = $this;
+        AssetManager::$instance = $this;
     }
 
     /**
-     * Get the {@see Manager} instance.
+     * Get the {@see AssetManager} instance.
      *
-     * @return Manager
+     * @return AssetManager
      */
-    public static function get() : Manager {
-        return Manager::$instance ?? throw new LogicException(
+    public static function get() : AssetManager {
+        return AssetManager::$instance ?? throw new LogicException(
             'The Asset Manager has not been instantiated. Call new Manager(...) first.',
         );
     }
 
     /**
-     * Get the {@see Manager} cache adapter.
+     * Get the {@see AssetManager} cache adapter.
      *
      * @return AdapterInterface
      */
     public static function cache() : AdapterInterface {
-        return Manager::get()->cache;
+        return AssetManager::get()->cache;
     }
 
     final public function asset(
@@ -135,7 +135,7 @@ class Manager
      * If no adapter is provided, a {@see PhpFilesAdapter} will be used.
      * The PhpFilesAdapter requires the PHP extension OPcache to be installed and activated.
      *
-     * If OPcache is not available, {@see Manager::$options} `onOPcacheError` will be used eiter:
+     * If OPcache is not available, {@see AssetManager::$options} `onOPcacheError` will be used eiter:
      * - Fall back to a {@see FilesystemAdapter}.
      *    - With or without an {@see Log::Error} message.
      * - Throw a {@see LogicException}.
@@ -199,7 +199,7 @@ class Manager
     }
 
     public static function updateAssetInventory() : void {
-        $manager = Manager::get();
+        $manager = AssetManager::get();
 
         if ( $manager->updated === 0 ) {
             return;
