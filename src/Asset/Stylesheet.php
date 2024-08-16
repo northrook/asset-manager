@@ -1,89 +1,61 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Northrook\Asset;
 
-use Northrook\AssetManager\Asset;
+use Northrook\AssetManager\Asset\StaticAsset;
+use Northrook\HTML\Element;
 use Northrook\Logger\Log;
-use Northrook\Support\Minify;
-use Symfony\Component\Filesystem\Exception\IOException;
-use Symfony\Component\Filesystem\Filesystem;
+use Northrook\Minify;
 
-final class Stylesheet extends Asset
+/**
+ */
+final class Stylesheet extends StaticAsset
 {
-    protected bool $inline = false;
+    protected const TYPE      = 'stylesheet';
+    protected const EXTENSION = '.css';
 
-    /**
-     *
-     * @param string  $source
-     * @param array{
-     *     id: string,
-     *     async: bool,
-     *     defer: bool,
-     *     fetchpriority: 'high'|'low'|'auto'
-     *    }           $attributes
-     * @param array   $meta
-     * @param bool    $inline
-     * @param ?int    $ttl
-     *
-     * @return Stylesheet
-     */
-    public static function asset(
-        string $source,
-        array  $attributes = [
-            'rel' => 'stylesheet',
-        ],
-        array  $meta = [],
-        bool   $inline = false,
-        ?int   $ttl = null,
-    ) : Stylesheet {
-        return new Stylesheet( $source, $attributes, $meta, [ 'inline' => $inline ], $ttl );
+    public function __construct(
+        protected readonly string $source,
+        protected array           $attributes = [],
+        public readonly bool      $inline = false,
+        protected readonly ?int   $persistence = null,
+    ) {
+        $this->assetID( [ $source, ... $attributes, $inline ] );
+        $this->compileStaticAsset();
     }
 
-    public function render() : string {
+    protected function build() : string {
 
-        $inline = $this->attributes[ 'inline' ] ?? false;
+        $this->createPublicAssetFile( $this->source );
 
-        if ( $inline ) {
-            unset( $this->attributes[ 'inline' ] );
-        }
+        $asset = $this->publicAssetFile( $this->source );
 
-        $attributes = $this->attributeString();
-
-        return $inline ? "<style $attributes>{$inline}</style>" : "<link $attributes>";
-    }
-
-
-    protected function assetAttributes() : array {
-
-        $inline = $this->inline ? $this->inlineAssetSource() : false;
-
-        if ( $inline ) {
-            return [ 'inline' => $inline ];
-        }
-
-        return [ 'href' => $this->href() ];
-    }
-
-    private function href() : string {
-        return $this->getAssetUrl() . '?v=' . $this->version();
-    }
-
-    private function inlineAssetSource() : ?string {
-
-        try {
-            return Minify::styles( ( new Filesystem() )->readFile( $this->source->value ) );
-        }
-        catch ( IOException $IOException ) {
-            Log::Warning(
-                'Unable to inline {asset}. File could not be read into memory.',
-                [
-                    'asset'     => $this->source->value,
-                    'message'   => $IOException->getMessage(),
-                    'exception' => $IOException,
-                ],
+        if ( !$asset->exists ) {
+            Log::error(
+                'Requested asset {href} could not be loaded.\nThe file does not exist.', [ 'href' => $this->source ],
             );
+            return '';
+
         }
 
-        return null;
+        return match ( $this->inline ) {
+            true  => $this->inlineStylesheet(),
+            false => $this->linkStylesheet(),
+        };
+    }
+
+    private function inlineStylesheet() : string {
+        return ( new Element(
+            'style',
+            $this->attributes(),
+            Minify::CSS( $this->publicFile->readContent() ),
+        ) )->toString();
+    }
+
+    private function linkStylesheet() : string {
+        $this->attributes( set : [ 'href' => $this->publicUrl() ] );
+        return ( new Element( 'link', $this->attributes ) )->toString();
     }
 }

@@ -5,7 +5,7 @@
   "license": "MIT",
   "autoload": {
     "psr-4": {
-      "Northrook\\": "src/"
+      "Northrook\\Asset\\": ""
     }
   },
   "authors": [
@@ -18,20 +18,14 @@
   "prefer-stable": true,
   "require": {
     "php": ">=8.2",
-    "symfony/filesystem": "^7.1",
-    "symfony/finder": "^7.1",
-    "symfony/cache": "^7.0",
     "northrook/core": "dev-main",
-    "northrook/cache": "dev-main",
-    "northrook/logger": "dev-main",
-    "northrook/support": "dev-main",
-    "northrook/elements": "dev-main"
+    "northrook/html-element": "dev-main",
+    "northrook/persistent-storage": "dev-main",
+    "northrook/minify": "dev-main",
+    "symfony/cache": "^7.1"
   },
   "require-dev": {
-    "symfony/deprecation-contracts": "@stable",
-    "symfony/error-handler": "@stable",
-    "symfony/var-dumper": "@stable",
-    "northrook/symfony-core-bundle": "dev-main",
-    "northrook/dev-env": "dev-main"
+    "northrook/dev-env": "dev-main",
+    "latte/latte": "^3.0"
   }
 }

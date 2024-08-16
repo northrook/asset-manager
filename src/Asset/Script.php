@@ -2,86 +2,59 @@
 
 namespace Northrook\Asset;
 
-use Northrook\AssetManager\Asset;
+
+use Northrook\HTML\Element;
 use Northrook\Logger\Log;
-use Northrook\Support\Minify;
-use Symfony\Component\Filesystem\Exception\IOException;
-use Symfony\Component\Filesystem\Filesystem;
+use Northrook\Minify;
 
-final class Script extends Asset
+/**
+ */
+final class Script extends StaticAsset
 {
-    protected bool $inline = false;
+    protected const TYPE      = 'script';
+    protected const EXTENSION = '.js';
 
-    /**
-     *
-     * @param string  $source
-     * @param array{
-     *     id: string,
-     *     async: bool,
-     *     defer: bool,
-     *     fetchpriority: 'high'|'low'|'auto'
-     *    }           $attributes
-     * @param array   $meta
-     * @param bool    $inline
-     * @param ?int     $ttl
-     *
-     * @return Script
-     */
-    public static function asset(
-        string $source,
-        array  $attributes = [],
-        array  $meta = [],
-        bool   $inline = false,
-        ?int   $ttl = null,
-    ) : Script {
-        return new Script( $source, $attributes, $meta, [ 'inline' => $inline ], $ttl );
+    public function __construct(
+        protected readonly string $source,
+        protected array           $attributes = [],
+        public readonly bool      $inline = false,
+        protected readonly ?int   $persistence = null,
+    ) {
+        $this->initializeAsset( [ $source, ... $attributes, $inline ] );
+        $this->buildAsset();
     }
 
-    public function render() : string {
+    protected function build() : string {
 
-        $inline = $this->attributes[ 'inline' ] ?? false;
+        $asset = $this->publicAssetFile( $this->source );
 
-        if ( $inline ) {
-            unset( $this->attributes[ 'inline' ] );
-        }
-
-        $attributes = $this->attributeString();
-
-        return $inline ? "<script $attributes>{$inline}</script>" : "<script $attributes></script>";
-    }
-
-
-    protected function assetAttributes() : array {
-
-        $inline = $this->inline ? $this->inlineAssetSource() : false;
-
-        if ( $inline ) {
-            return [ 'inline' => $inline ];
-        }
-
-        return [ 'src' => $this->src() ];
-    }
-
-    private function src() : string {
-        return $this->getAssetUrl() . '?v=' . $this->version();
-    }
-
-    private function inlineAssetSource() : ?string {
-        try {
-            return Minify::scripts( ( new Filesystem() )->readFile( $this->source->value ) );
-        }
-        catch ( IOException $IOException ) {
-            Log::Warning(
-                'Unable to inline {asset}. File could not be read into memory.',
-                [
-                    'asset'     => $this->source->value,
-                    'message'   => $IOException->getMessage(),
-                    'exception' => $IOException,
-                ],
+        dump( $asset );
+        if ( !$asset->exists ) {
+            Log::error(
+                'Requested asset {href} could not be loaded.\nThe file does not exist.', [ 'href' => $this->source ],
             );
+            return '';
+
         }
 
-        return null;
+        return match ( $this->inline ) {
+            true  => $this->inlineScript(),
+            false => $this->linkedScript(),
+        };
     }
 
+    private function inlineScript() : string {
+        return ( new Element(
+            'script',
+            $this->attributes(),
+            Minify::JS( $this->publicFile->readContent() ),
+        ) )->toString();
+    }
+
+    private function linkedScript() : string {
+        return ( new Element(
+            'script',
+            $this->attributes( set : [ 'src' => $this->publicUrl() ] ),
+        ) )->toString();
+    }
 }

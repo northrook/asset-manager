@@ -15,7 +15,8 @@
 /public/
 /var/
 /build/
-/*.php
+/index.php
+/*.html
 
 # Node
 /node_modules/
