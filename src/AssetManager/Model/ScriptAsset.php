@@ -24,7 +24,7 @@ final class ScriptAsset extends AssetModel
 
     public function addSource( string|Stringable $source ) : self
     {
-        $this->compiler()->add( (string) $source );
+        $this->compiler()->addSource( (string) $source );
         return $this;
     }
 
@@ -42,7 +42,7 @@ final class ScriptAsset extends AssetModel
         $this->assetID( $assetId );
         $this->pathfinder = $pathfinder;
 
-        $this->compiler()->add( ...$this->sources );
+        $this->compiler()->addSource( ...$this->sources );
 
         return $this;
     }
