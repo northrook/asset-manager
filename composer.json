@@ -1,31 +1,34 @@
 {
   "name": "northrook/asset-manager",
-  "description": "An asset manager written in PHP. Manage optimised, public versions of assets from various sources.",
+  "description": "Manage optimised, public versions of assets from various sources.",
   "type": "library",
   "license": "MIT",
-  "autoload": {
-    "psr-4": {
-      "Northrook\\Asset\\": ""
-    }
-  },
   "authors": [
     {
       "name": "Martin",
       "email": "mn@northrook.com"
     }
   ],
+  "autoload": {
+    "psr-4": {
+      "Core\\Service\\": "src/"
+    }
+  },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "require": {
-    "php": ">=8.2",
-    "northrook/core": "dev-main",
-    "northrook/html-element": "dev-main",
-    "northrook/persistent-storage": "dev-main",
-    "northrook/minify": "dev-main",
-    "symfony/cache": "^7.1"
+    "php": ">=8.3",
+    "northrook/pathfinder": "dev-main",
+    "northrook/settings": "dev-main",
+    "northrook/minify": "dev-main"
   },
   "require-dev": {
+    "symfony/framework-bundle": "@stable",
     "northrook/dev-env": "dev-main",
+    "northrook/core-symfony": "dev-main",
     "latte/latte": "^3.0"
+  },
+  "scripts": {
+    "phpstan": "vendor/bin/phpstan analyse"
   }
 }

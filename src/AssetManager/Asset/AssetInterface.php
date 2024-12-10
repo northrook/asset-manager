@@ -1,40 +1,53 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types=1);
 
-namespace Northrook\AssetManager\Asset;
+namespace Core\Service\AssetManager\Asset;
 
 use Stringable;
 
+/**
+ * @used-by \Core\Service\AssetManager\Interface\AssetManagerInterface
+ *
+ * @author  Martin Nielsen <mn@northrook.com>
+ */
 interface AssetInterface
 {
-    public function isValid() : bool;
+    /**
+     * Used when the {@see AssetManagerInterface} is `calling` the `asset`.
+     *
+     * This class __only__ handles a fully resolved asset.
+     *
+     * @param string $name
+     * @param string $assetID
+     * @param string $html
+     * @param Type   $type
+     */
+    public function __construct( string $name, string $assetID, string $html, Type $type );
 
     /**
-     * Retrieve the ID for this {@see AssetInterface}.
-     *
-     * The ID:
-     * - May be auto-generated or manually supplied.
-     * - Will be unique to this asset.
-     * - Can be used to retrieve the Asset.
-     *
-     * @return string
+     * @return string dot.separated lowercase
      */
-    public function getAssetID() : string;
+    public function name() : string;
 
     /**
-     * Retrieve trusted HTML ready for public use.
-     *
-     * @return string
+     * @return string a 16 character hash
      */
-    public function getHtml() : string;
+    public function assetID() : string;
 
     /**
-     * - Clear the {@see self::class} from the cache.
-     * - Recompiles the asset HTML.
-     * - Cache recompiled HTML.
+     * Returns the asset `type` by default.
      *
-     * @return self
+     * @param null|string|Type $is
+     *
+     * @return bool|Type
      */
-    public function recompileAsset() : self;
+    public function type( null|string|Type $is = null ) : Type|bool;
+
+    /**
+     * Returns fully resolved `HTML` of the asset.
+     *
+     * @return string|Stringable
+     */
+    public function getHTML() : string|Stringable;
 }

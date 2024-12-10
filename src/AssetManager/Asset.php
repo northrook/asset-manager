@@ -1,88 +1,56 @@
 <?php
 
-namespace Northrook\AssetManager;
+declare(strict_types=1);
 
-use Northrook\AssetManager;
-use Northrook\Core\Exception\MissingPropertyException;
-use Northrook\Logger\Log;
-use Northrook\Support\File;
-use Psr\Cache\InvalidArgumentException;
-use Symfony\Component\Cache\CacheItem;
-use Symfony\Component\Cache\Exception\CacheException;
-use Symfony\Contracts\Cache\CacheInterface;
-use function Northrook\Core\Function\hashKey;
-use function Northrook\Core\Function\normalizeKey;
+namespace Core\Service\AssetManager;
 
-abstract class Asset implements \Stringable
+use Core\Service\AssetManager\Asset\{AssetInterface, Type};
+use Latte\Runtime\Html;
+use Support\Interface\DataObject;
+use Stringable;
+
+final readonly class Asset extends DataObject implements AssetInterface
 {
-    private static AssetManager $assetManager;
-
-    protected string $assetID;
-    protected string $assetType;
-    protected string $html;
-
-    final protected function manager() : AssetManager {
-        return $this::$assetManager ?? throw new MissingPropertyException(
-            'assetManager', $this::class,
-            $this::class . ' tried calling required AssetManager. Use the static function ' . self::class . '::setManager() to do so.',
-        );
+    public function __construct(
+        private string $name,
+        private string $assetID,
+        private string $html,
+        private Type   $type,
+    ) {
     }
-
-
-    final protected function cache() : CacheInterface {
-        return $this->manager()->cache;
-    }
-
-    final public function clearCache() : self {
-        try {
-            $this->cache()->delete( $this->assetID );
-        }
-        catch ( InvalidArgumentException $e ) {
-            Log::exception( $e );
-        }
-        return $this;
-    }
-
-    final protected function cachedAsset() : string {
-        try {
-            return $this->cache()->get(
-                $this->assetID, function ( CacheItem $cache ) : string {
-                $cache->expiresAfter( 1 );
-
-                return $this->build();
-            },
-            );
-        }
-        catch ( InvalidArgumentException $e ) {
-            Log::exception( $e );
-            return '';
-        }
-    }
-
-    final public static function setManager( AssetManager $assetManager ) : void {
-        self::$assetManager ??= $assetManager;
-    }
-
 
     /**
-     * Build the asset. Must return valid HTML.
+     * Return the {@see Asset::build} as {@see HtmlStringable}
      *
-     * @return string
+     * @return string|Stringable
      */
-    abstract protected function build() : string;
+    public function getHtml() : string|Stringable
+    {
+        if ( \class_exists( Html::class ) ) {
+            return new Html( $this->html );
+        }
+        return $this->html;
+    }
+
+    public function name() : string
+    {
+        return $this->name;
+    }
+
+    public function assetID() : string
+    {
+        return $this->assetID;
+    }
 
     /**
-     * Return the {@see $html}, calls {@see build()} if necessary.
+     * Returns the asset `type` by default.
      *
-     * @return string
+     * @param null|string|Type $is
+     *
+     * @return bool|Type
      */
-    public function __toString() : string {
-        return $this->html ??= $this->build();
+    public function type( string|Type|null $is = null ) : Type|bool
+    {
+        return $is ? Type::from( $is ) === $this->type : $this->type;
     }
-
-    public static function generateFilenameKey( string $path ) : string {
-        $trimmed = \preg_replace( '/^(?:\w*:\/\/)*(.*?)(\?.*)?$/m', '$1', $path );
-        return normalizeKey( $trimmed ?? $path );
-    }
-
 }

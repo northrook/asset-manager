@@ -1,81 +1,97 @@
 <?php
 
-declare ( strict_types = 1 );
+declare(strict_types=1);
 
-namespace Northrook;
+namespace Core\Service;
 
-/*
-- Will fetch a provided asset, cache it, and handle optimisation.
-- Will it be responsible for keeping track of assets?
-
-- The DocumentBundle should really handle enqueuing and such, but we _could_ handle tracking here?
-
-- We could also keep a manifest of assets, and expose that when required,
-  but have the DocumentBundle decide what to ask for
-
-*/
-
-use Northrook\Asset\Script;
-use Northrook\Asset\Stylesheet;
-use Northrook\AssetManager\Asset;
-use Northrook\Cache\ManifestCache;
-use Northrook\Core\Trait\SingletonClass;
+use Core\{
+    Service\AssetManager\Asset\AssetInterface,
+    Service\AssetManager\Interface\AssetManagerInterface
+};
+use Core\Service\AssetManager\AssetFactory;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\Cache\CacheInterface;
 
-final class AssetManager
+final class AssetManager implements AssetManagerInterface
 {
-    use SingletonClass;
+    /** @var null|string[] */
+    protected ?array $deployed = null;
 
-    private array $directories;
+    /** @var string[] */
+    protected array $enqueued = [];
 
     /**
-     * @param string                $projectRootDirectory   /
-     * @param string                $assetStorageDirectory  /var/assets
-     * @param string                $publicRootDirectory    /public
-     * @param string                $publicAssetsDirectory  /public/assets
-     * @param CacheInterface        $cache
-     * @param ManifestCache         $manifest
-     * @param null|LoggerInterface  $logger
+     * @param AssetFactory     $factory
+     * @param ?LoggerInterface $logger
+     *
+     * @noinspection PhpPropertyOnlyWrittenInspection
      */
     public function __construct(
-        public readonly CacheInterface    $cache,
+        private readonly AssetFactory     $factory,
         private readonly ?LoggerInterface $logger = null,
     ) {
-        $this->instantiationCheck();
-
-        Asset::setManager( $this );
-        AssetManager::$instance = $this;
     }
 
-    public function getDirectory( string $key ) : string {
-        return $this->directories[ $key ] ?? throw new \InvalidArgumentException(
-            'The directory "' . $key . '" does not exist.',
+    /**
+     * Indicate that one or more assets have already been resolved.
+     *
+     * These will be skipped on {@see self::resolveEnqueuedAssets()}.
+     *
+     * @param string ...$deployed
+     *
+     * @return void
+     */
+    public function setDeployed( string ...$deployed ) : void
+    {
+        $this->deployed = $deployed;
+    }
+
+    /**
+     * Enqueue one or more assets to later be resolved.
+     *
+     * @param string ...$name
+     *
+     * @return void
+     */
+    public function enqueueAsset( string ...$name ) : void
+    {
+        foreach ( $this->enqueued as $asset ) {
+            $this->enqueued[$asset] ??= $asset;
+        }
+    }
+
+    // TODO : Check if asset is registered somewhere
+    public function hasEnqueued( string $name ) : bool
+    {
+        return isset( $this->enqueued[$name] );
+    }
+
+    public function renderAsset( string $name, array $attributes = [] ) : ?AssetInterface
+    {
+        dump( [__METHOD__, $name, $attributes, AssetInterface::class] );
+        return null;
+    }
+
+    public function resolveEnqueuedAssets( bool $cached = true ) : array
+    {
+        dump(
+            [
+                __METHOD__,
+                'enqueued' => $this->enqueued,
+                'cached'   => $cached,
+                [AssetInterface::class],
+            ],
         );
+
+        return [];
     }
 
-    public function setDirectory( string $key, string $path ) : self {
-        $this->directories[ $key ] = $path;
-        return $this;
+    public function getEnqueuedAssets() : array
+    {
+        return $this->enqueued;
     }
 
-    public static function get() : AssetManager {
-        return AssetManager::getInstance();
-    }
-
-    public function getScript(
-        string $src,
-        array  $attributes = [],
-        bool   $inline = false,
-    ) : Script {
-        return new Script( $src, $attributes, $inline );
-    }
-
-    public function getStylesheet(
-        string $href,
-        array  $attributes = [],
-        bool   $inline = false,
-    ) : Stylesheet {
-        return new Stylesheet( $href, $attributes, $inline );
-    }
+    // private function assetFactory() : AssetFactory
+    // {
+    //     return ( $this->lazyFactory )();
+    // }
 }
