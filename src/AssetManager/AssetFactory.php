@@ -4,12 +4,34 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager;
 
+use Core\Service\AssetManager\Asset\AssetModel;
+use Core\Service\AssetManager\Asset\AssetModelInterface;
+
+/**
+ * ### Public Assets Directory
+ * `./app/public/assets/..`
+ *
+ * ### Assets Build Directory
+ * `./app/var/assets/..`
+ */
 final class AssetFactory
 {
+    /**
+     * @param string $publicAssetsDirectory `./app/public/assets/..`
+     * @param string $assetsBuildDirectory  `./app/var/assets/..`
+     * @param array  $registeredAssets
+     */
     public function __construct(
-        private readonly array $registeredAssets,
+        protected readonly string $publicAssetsDirectory,
+        protected readonly string $assetsBuildDirectory,
+        private readonly array    $registeredAssets,
         // private readonly ?AssetManifest $assetManifest = null,
     ) {
         dump( $this );
+    }
+
+    protected function getAssetModel( string $name ) : AssetModelInterface
+    {
+        // return new
     }
 }

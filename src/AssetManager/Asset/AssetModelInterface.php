@@ -12,9 +12,9 @@ interface AssetModelInterface
     /**
      * @template Setting of array<string, mixed>|null|bool|float|int|string|\UnitEnum
      *
-     * @param PathfinderInterface         $pathfinder ,
+     * @param PathfinderInterface         $pathfinder
      * @param ?SettingsInterface<Setting> $settings
-     * @param ?string                     $assetId
+     * @param ?string                     $assetID
      *
      * @return self
      *
@@ -23,7 +23,7 @@ interface AssetModelInterface
     public function build(
         PathfinderInterface $pathfinder,
         ?SettingsInterface  $settings = null,
-        ?string             $assetId = null,
+        ?string             $assetID = null,
     ) : self;
 
     /**

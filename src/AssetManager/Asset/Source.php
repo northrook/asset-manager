@@ -13,8 +13,8 @@ enum Source
     case CDN;
 
     /**
-     * @param Source|string $string
-     * @param bool          $throwOnInvalid
+     * @param 'cdn'|'local'|'remote'|Source|string $string
+     * @param bool                                 $throwOnInvalid
      *
      * @return ($throwOnInvalid is true ? static : null|static)
      */

@@ -37,9 +37,9 @@ final class ScriptAsset extends AssetModel
     public function build(
         PathfinderInterface $pathfinder,
         ?SettingsInterface  $settings = null,
-        ?string             $assetId = null,
+        ?string             $assetID = null,
     ) : self {
-        $this->assetID( $assetId );
+        $this->assetID( $assetID );
         $this->pathfinder = $pathfinder;
 
         $this->compiler()->addSource( ...$this->sources );
