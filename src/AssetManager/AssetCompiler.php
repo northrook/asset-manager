@@ -11,6 +11,16 @@ use InvalidArgumentException;
 #[Autoconfigure( lazy : true )]
 class AssetCompiler
 {
+    private array $assetDirectories = [
+        AssetManager::DIR_ASSETS,
+        'style'    => AssetManager::DIR_STYLES,
+        'script'   => AssetManager::DIR_SCRIPTS,
+        'font'     => AssetManager::DIR_FONTS,
+        'image'    => AssetManager::DIR_IMAGES,
+        'video'    => AssetManager::DIR_VIDEOS,
+        'document' => AssetManager::DIR_DOCUMENTS,
+    ];
+
     /** @var string appends the {@see self::publicAssetPath}. */
     private string $defaultDirectory = 'assets';
 
@@ -26,9 +36,10 @@ class AssetCompiler
     {
         $directories = [];
 
-        $appAssets = $this->pathfinder->get( AssetManager::DIR_ASSETS_KEY );
-
-        dump( $appAssets );
+        foreach ( $this->assetDirectories as $directory ) {
+            $path = $this->pathfinder->get( $directory );
+            dump( $path );
+        }
 
         dump( $directories );
     }

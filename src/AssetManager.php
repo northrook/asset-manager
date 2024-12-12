@@ -16,6 +16,15 @@ final readonly class AssetManager
         URL_PUBLIC_KEY = 'url.public',       // application url; example.com
         DIR_BUILD_KEY  = 'dir.assets.build'; // store optimized and cached assets
 
+    public const string
+        DIR_ASSETS    = 'dir.assets',
+        DIR_STYLES    = 'dir.assets/styles',
+        DIR_SCRIPTS   = 'dir.assets/scripts',
+        DIR_FONTS     = 'dir.assets/fonts',
+        DIR_IMAGES    = 'dir.assets/images',
+        DIR_VIDEOS    = 'dir.assets/videos',
+        DIR_DOCUMENTS = 'dir.assets/documents';
+
     public function __construct(
         protected AssetCompiler    $compiler,
         protected ?LoggerInterface $logger = null,
