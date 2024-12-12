@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Core\Service\AssetManager\Compiler;
 
 use Core\Service\AssetManager\Asset\{AssetConfigurationInterface, AssetModelInterface, Source, Type};
-use Core\Service\AssetManager\Model\{ScriptAsset, StyleAsset};
+use Core\Service\AssetManager\Compiler\StyleAsset;
+use JetBrains\PhpStorm\Deprecated;
+use Core\Service\AssetManager\Compiler\{ScriptAsset};
 use Support\{Normalize, Str};
 use function Support\implements_interface;
 use InvalidArgumentException;
 
+#[Deprecated]
 final readonly class Register implements AssetConfigurationInterface
 {
     public string $name;
 
-    /** @var class-string<AssetModelInterface> */
+    /** @var class-string<\Core\Service\AssetManager\Model\AssetModelInterface> */
     public string $model;
 
     /** @var string[] */
@@ -43,7 +46,7 @@ final readonly class Register implements AssetConfigurationInterface
     }
 
     /**
-     * @return array{name: string, model: class-string<AssetModelInterface>, sources: string[], source: string, type: string}
+     * @return array{name: string, model: class-string<\Core\Service\AssetManager\Model\AssetModelInterface>, sources: string[], source: string, type: string}
      */
     final public function getConfiguration() : array
     {
@@ -121,7 +124,7 @@ final readonly class Register implements AssetConfigurationInterface
     /**
      * @param class-string $model
      *
-     * @return class-string<AssetModelInterface>
+     * @return class-string<\Core\Service\AssetManager\Model\AssetModelInterface>
      */
     private function validateModelClass( string $model ) : string
     {
@@ -138,7 +141,7 @@ final readonly class Register implements AssetConfigurationInterface
             throw new InvalidArgumentException( $message.$reason );
         }
 
-        /** @var class-string<AssetModelInterface> $model */
+        /** @var class-string<\Core\Service\AssetManager\Model\AssetModelInterface> $model */
         return $model;
     }
 

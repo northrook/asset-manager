@@ -151,6 +151,7 @@ enum Type
         $type = Type::MAP[\trim( \strtolower( $string ), ". \n\r\t\v\0" )] ?? null;
 
         if ( ! $type ) {
+            $string     = \strtoupper( $string );
             $reflection = new ReflectionEnum( self::class );
 
             if ( $reflection->hasCase( $string ) ) {

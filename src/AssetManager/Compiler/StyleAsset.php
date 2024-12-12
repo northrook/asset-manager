@@ -1,6 +1,6 @@
 <?php
 
-namespace Core\Service\AssetManager\Model;
+namespace Core\Service\AssetManager\Compiler;
 
 use Northrook\HTML\Element;
 use Northrook\StylesheetMinifier;

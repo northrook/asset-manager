@@ -7,6 +7,7 @@ namespace Core\Service\AssetManager\Compiler;
 
 use Support\{Interface\DataObject, Normalize, Str};
 use Core\Service\AssetManager\Asset\{AssetModelInterface, Source, Type};
+use JetBrains\PhpStorm\Deprecated;
 
 /**
  * @param string   $name
@@ -18,6 +19,7 @@ use Core\Service\AssetManager\Asset\{AssetModelInterface, Source, Type};
  *
  * @return array{array{name: string, sources: string|string[], origin: Source, type: Type, prefersInline: null|bool, prefersRemoteOrigin: null|bool}}
  */
+
 function asset(
     string       $name,
     string|array $sources,
@@ -38,11 +40,12 @@ function asset(
     ];
 }
 
+#[Deprecated]
 final readonly class AssetRegistration extends DataObject implements AssetRegistrationInterface
 {
     public string $name;
 
-    /** @var class-string<AssetModelInterface> */
+    /** @var class-string<\Core\Service\AssetManager\Model\AssetModelInterface> */
     public string $model;
 
     /** @var string[] */
