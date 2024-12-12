@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager;
 
-use Core\Service\AssetManager\Asset\AssetModel;
-use Core\Service\AssetManager\Asset\AssetModelInterface;
+use Core\Service\AssetManager\Asset\{AssetModelInterface};
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
 /**
  * ### Public Assets Directory
@@ -14,6 +14,7 @@ use Core\Service\AssetManager\Asset\AssetModelInterface;
  * ### Assets Build Directory
  * `./app/var/assets/..`
  */
+#[Autoconfigure( lazy : true )]
 final class AssetFactory
 {
     /**

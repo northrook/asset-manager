@@ -5,7 +5,7 @@ namespace Core\Service\AssetManager\Compiler;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-final class AssetRegistrationPass implements CompilerPassInterface
+final class AssetSourceRegistrationPass implements CompilerPassInterface
 {
     public function __construct()
     {

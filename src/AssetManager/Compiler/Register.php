@@ -60,13 +60,17 @@ final readonly class Register implements AssetConfigurationInterface
      * @param string                        $name
      * @param string[]                      $sources
      * @param 'cdn'|'local'|'remote'|Source $source
+     * @param ?bool                         $prefersInline
+     * @param ?bool                         $prefersRemoteOrigin
      *
      * @return self
      */
     public static function stylesheet(
         string        $name,
         string|array  $sources,
-        string|Source $source,
+        string|Source $source = Source::LOCAL,
+        ?bool         $prefersInline = null,
+        ?bool         $prefersRemoteOrigin = null,
     ) : self {
         return new self(
             $name,
