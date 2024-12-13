@@ -2,56 +2,52 @@
 
 namespace Core\Service\AssetManager;
 
-use Core\Service\AssetManager\Asset\AssetModelInterface;
-use Core\Service\AssetManager\Interface\AssetManifestInterface;
-use Northrook\ArrayStore;
+use Core\Service\AssetManager\AssetManifest\AssetReference;
+use Northrook\{ArrayStore};
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
-/**
- * @template TKey of array-key
- * @template TValue as mixed|array<TKey,TValue>
- *
- * @extends ArrayStore<TKey,TValue>
- */
-final class AssetManifest extends ArrayStore implements AssetManifestInterface
+#[Autoconfigure(
+    lazy     : true,   // lazy-load using ghost
+    public   : false,  // private
+    autowire : false,  // manual injection only
+)]
+class AssetManifest
 {
-    public function __construct(
+    /** @var ArrayStore<string, AssetReference> */
+    private readonly ArrayStore $manifest;
+
+    final public function __construct(
         string           $storagePath,
         ?LoggerInterface $logger = null,
     ) {
-        parent::__construct( $storagePath, $this::class, false, true, $logger );
-    }
-
-    public function registerAsset( AssetModelInterface $asset ) : void
-    {
-        // TODO: Implement registerAsset() method.
-    }
-
-    public function hasAsset( string $name ) : bool
-    {
-        return false;
-    }
-
-    public function getRegisteredAssets() : array
-    {
-        dump(
-            [
-                __METHOD__,
-                [AssetModelInterface::class],
-            ],
+        $this->manifest = new ArrayStore(
+            $storagePath,
+            $this::class,
+            false,
+            false, // ::[DEBUG]
+            $logger,
         );
-
-        return [];
     }
 
-    public function getAssetBlueprint( string $asset ) : ?AssetModelInterface
+    final public function has( string $asset ) : bool
     {
-        dump(
-            [
-                __METHOD__,
-                AssetModelInterface::class,
-            ],
-        );
-        return null;
+        return $this->manifest->has( $asset );
+    }
+
+    /**
+     * @param string $asset
+     *
+     * @return null|array<string, AssetReference>|AssetReference
+     */
+    final public function get( string $asset ) : mixed
+    {
+        return $this->manifest->get( $asset );
+    }
+
+    final public function register( string $asset, AssetReference $reference ) : self
+    {
+        $this->manifest->set( $asset, $reference );
+        return $this;
     }
 }

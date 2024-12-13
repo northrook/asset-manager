@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare( strict_types = 1 );
 
 namespace Core\Service\AssetManager\Compiler;
 
@@ -26,13 +26,14 @@ final class AssetScanner implements IteratorAggregate
     private array $results = [];
 
     public function __construct(
-        string                            $directoryPath,
-        private readonly ?Type            $type = null,
-        private readonly ?LoggerInterface $logger = null,
-    ) {
+            string                            $directoryPath,
+            private readonly ?Type            $type = null,
+            private readonly ?LoggerInterface $logger = null,
+    )
+    {
         $this->directoryPath = Normalize::path( $directoryPath );
         $this->parseScannedFileInfo(
-            ...$this->directoryScan(),
+                ...$this->directoryScan(),
         );
     }
 
@@ -44,6 +45,11 @@ final class AssetScanner implements IteratorAggregate
         return new ArrayIterator( $this->results );
     }
 
+    public function hasResults() : bool
+    {
+        return !empty( $this->results );
+    }
+
     /**
      * @return array<string, AssetReference>
      */
@@ -53,7 +59,7 @@ final class AssetScanner implements IteratorAggregate
     }
 
     /**
-     * @param null|self::SCAN_DIRECTORIES|self::SCAN_FILES|string $glob
+     * @param null|self::SCAN_DIRECTORIES|self::SCAN_FILES|string  $glob
      *
      * @return FileInfo[]
      */
@@ -63,12 +69,12 @@ final class AssetScanner implements IteratorAggregate
 
         $scan = [];
 
-        foreach ( \glob( $this->directoryPath.$glob ) ?: [] as $file ) {
+        foreach ( \glob( $this->directoryPath . $glob ) ?: [] as $file ) {
             $reference = new FileInfo( $file );
-            if ( ! $reference->getType() ) {
+            if ( !$reference->getType() ) {
                 $this->logger?->warning(
-                    'Could not determine type for file: {file}.',
-                    ['file' => $file],
+                        'Could not determine type for file: {file}.',
+                        [ 'file' => $file ],
                 );
 
                 continue;
@@ -82,6 +88,8 @@ final class AssetScanner implements IteratorAggregate
 
     public function parseScannedFileInfo( FileInfo ...$fileInfo ) : self
     {
+        // Nested Scan for images, documents, etc
+        // Fonts should expect ./assets/fonts/{fontName}/fontFile.woff#
         foreach ( $fileInfo as $reference ) {
             if ( $reference->isDir() ) {
                 $path = [];
@@ -102,16 +110,20 @@ final class AssetScanner implements IteratorAggregate
                 }
             }
             else {
-                $path = [$reference->getRealPath()];
+                $path = [ $reference->getRealPath() ];
             }
 
-            if ( ! $path ) {
+            if ( !$path ) {
                 continue;
             }
 
-            $name = $reference->getFilename();
+            $asset = new AssetReference(
+                    $reference->getFilename(),
+                    $reference,
+                    $path,
+                    $this->type );
 
-            $this->results[$name] = new AssetReference( $name, $path );
+            $this->results[ $asset->name ] = $asset;
         }
 
         return $this;

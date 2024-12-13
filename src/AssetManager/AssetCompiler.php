@@ -6,7 +6,9 @@ use Core\{PathfinderInterface,
     Service\AssetManager,
     Service\AssetManager\Asset\AssetModel,
     Service\AssetManager\Asset\Type,
-    Service\AssetManager\Model\AssetModelInterface
+    Service\AssetManager\Model\AssetModelInterface,
+    Service\AssetManager\Model\ScriptAsset,
+    Service\AssetManager\Model\StyleAsset
 };
 use Psr\Log\LoggerInterface;
 use Support\Normalize;
@@ -34,12 +36,17 @@ class AssetCompiler
     /** @var string appends the {@see self::publicAssetPath}. */
     private string $defaultDirectory = 'assets';
 
+    /** @var array */
+    private array $foundAssets = [];
+
     /**
      * @param PathfinderInterface $pathfinder
+     * @param AssetManifest       $manifest
      * @param ?LoggerInterface    $logger
      */
     public function __construct(
         private readonly PathfinderInterface $pathfinder,
+        private readonly AssetManifest       $manifest,
         private readonly ?LoggerInterface    $logger,
     ) {
         // Reset the Filesystem on initialization
@@ -63,110 +70,47 @@ class AssetCompiler
 
     The Asset is then bundled, optimized, generated - based on the Model type.
 
-
     If successful, the Factory returns an AssetInterface, with fully resolved HTML.
 
      */
 
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverStyleAssets( string $inDirectory ) : array
+    final public function compileAssets( Compiler\AssetReference ...$reference ) : self
     {
-        $styles = [];
-
-        foreach ( ( new Compiler\AssetScanner( $inDirectory, Type::STYLE ) ) as $style ) {
-            // $styles[] = new
-            dump( $style );
+        if ( ! $reference ) {
+            foreach ( $this->foundAssets as $prefix => $foundReferences ) {
+                foreach ( $foundReferences as $referencePrefix => $foundReference ) {
+                    $reference["{$prefix}.{$referencePrefix}"] = $foundReference;
+                }
+            }
         }
 
-        // array contains file.css and dir/*.css
-        // if example.css and example/*.css exists,
-        // combine as if [ ... $example, $example ]
-
-        return $styles;
+        foreach ( $reference as $key => $asset ) {
+            // $asset = $this->compile( $asset );
+            // // $compile = match ( $type ) {
+            // //     Type::STYLE    => $this->discoverStyleAssets( $path ),
+            // //     Type::SCRIPT   => $this->discoverScriptAssets( $path ),
+            // //     Type::FONT     => $this->discoverFontAssets( $path ),
+            // //     Type::IMAGE    => $this->discoverImageAssets( $path ),
+            // //     Type::VIDEO    => $this->discoverVideoAssets( $path ),
+            // //     Type::DOCUMENT => $this->discoverDocumentAssets( $path ),
+            // //     default        => $this->discoverAssets( $path ),
+            // // };
+            dump( $asset );
+        }
+        return $this;
     }
 
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverScriptAssets( string $inDirectory ) : array
+    final public function compile( Compiler\AssetReference $assetReference ) : ?AssetModelInterface
     {
-        $scripts = [];
-
-        // foreach ( $this->scanDirectory( $inDirectory, Type::SCRIPT ) as $asset ) {
-        // }
-
-        // array contains file.css and dir/*.js
-        // if example.css and example/*.js exists,
-        // combine as if [ ... $example, $example ]
-        // look into how AssetMapper handles this at some point
-
-        return $scripts;
-    }
-
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverFontAssets( string $inDirectory ) : array
-    {
-        $fonts = $this->scanDirectory( $inDirectory, Type::FONT );
-
-        return $fonts;
-    }
-
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverImageAssets( string $inDirectory ) : array
-    {
-        $images = $this->scanDirectory( $inDirectory, Type::IMAGE );
-
-        return $images;
-    }
-
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverVideoAssets( string $inDirectory ) : array
-    {
-        $videos = $this->scanDirectory( $inDirectory, Type::VIDEO );
-
-        return $videos;
-    }
-
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverDocumentAssets( string $inDirectory ) : array
-    {
-        $documents = $this->scanDirectory( $inDirectory, Type::DOCUMENT );
-
-        return $documents;
-    }
-
-    /**
-     * @param string $inDirectory
-     *
-     * @return AssetModelInterface[]
-     */
-    public function discoverAssets( string $inDirectory ) : array
-    {
-        $any = $this->scanDirectory( $inDirectory );
-
-        return $any;
+        return match ( $assetReference->type ) {
+            Type::STYLE  => StyleAsset::fromReference( $assetReference ),
+            Type::SCRIPT => ScriptAsset::fromReference( $assetReference ),
+            // Type::FONT     => $this->discoverFontAssets( $path ),
+            // Type::IMAGE    => $this->discoverImageAssets( $path ),
+            // Type::VIDEO    => $this->discoverVideoAssets( $path ),
+            // Type::DOCUMENT => $this->discoverDocumentAssets( $path ),
+            default => null,
+        };
     }
 
     /**
@@ -174,30 +118,22 @@ class AssetCompiler
      *
      * @param 'document'|'font'|'image'|'root'|'script'|'style'|'video'|Type ...$scan
      *
-     * @return void
+     * @return self
      */
-    final public function scanDirectories( string|Type ...$scan ) : void
+    final public function scanDirectories( string|Type ...$scan ) : self
     {
-        $found = [];
-
         foreach ( $this->getAssetDirectories( ...$scan ) as $key => $directory ) {
-            $type = Type::from( $key ) ?? $key;
+            $type = Type::from( $key ) ?? null;
             $path = $this->pathfinder->get( $directory );
 
-            $found[$key] = match ( $type ) {
-                Type::STYLE    => $this->discoverStyleAssets( $path ),
-                Type::SCRIPT   => $this->discoverScriptAssets( $path ),
-                Type::FONT     => $this->discoverFontAssets( $path ),
-                Type::IMAGE    => $this->discoverImageAssets( $path ),
-                Type::VIDEO    => $this->discoverVideoAssets( $path ),
-                Type::DOCUMENT => $this->discoverDocumentAssets( $path ),
-                default        => $this->discoverAssets( $path ),
-            };
+            $scan = new Compiler\AssetScanner( $path, $type, $this->logger );
+
+            if ( $scan->hasResults() ) {
+                $this->foundAssets[$key] = $scan->getResults();
+            }
         }
 
-        if ( $found ) {
-            dump( $found );
-        }
+        return $this;
     }
 
     final public function publicAssetPath(
@@ -234,17 +170,23 @@ class AssetCompiler
     /**
      * Ensure all {@see AssetCompiler::$assetDirectories} exist and are valid.
      *
-     * @return void
+     * Usually run during a {@see CompilerPass}.
+     *
+     * @param bool $returnException
+     *
+     * @return InvalidArgumentException|true
      *
      * @throws InvalidArgumentException if a directory is `invalid` or a `file`
      */
-    final public function prepareAssetDirectories() : void
+    final public function prepareAssetDirectories( bool $returnException = false ) : true|InvalidArgumentException
     {
         foreach ( $this->assetDirectories as $key => $directory ) {
             $path = $this->pathfinder->getFileInfo( $directory );
 
             if ( ! $path ) {
-                throw new InvalidArgumentException( 'Invalid asset directory: '.$directory );
+                $result = new InvalidArgumentException( 'Invalid asset directory: '.$directory );
+
+                break;
             }
 
             // Ensure the directory exists
@@ -254,9 +196,17 @@ class AssetCompiler
 
             // Ensure the set $path is a readable directory.
             if ( $path->isFile() || ! $path->isReadable() ) {
-                throw new InvalidArgumentException();
+                $result = new InvalidArgumentException();
+
+                break;
             }
         }
+
+        if ( $result instanceof InvalidArgumentException && false === $returnException ) {
+            throw $result;
+        }
+
+        return $result;
     }
 
     /**
@@ -292,67 +242,5 @@ class AssetCompiler
     final protected function filesystem() : Filesystem
     {
         return AssetCompiler::$filesystem ??= new Filesystem();
-    }
-
-    /**
-     * @param string    $scan
-     * @param null|Type $type
-     *
-     * @return array<string, array{name: string, type: string, path: list<string>|string}>
-     */
-    private function scanDirectory( string $scan, ?Type $type = null ) : array
-    {
-        $found = [];
-
-        $directory
-                = $this->pathfinder->get( $scan ) ?? throw new InvalidArgumentException( 'Directory path is invalid.' );
-
-        $scanType = $type ? '/**' : '/*.*';
-
-        foreach ( \glob( "{$directory}$scanType" ) ?: [] as $file ) {
-            $fileInfo = new \Support\FileInfo( $file );
-
-            if ( ! $fileInfo->getType() ) {
-                $this->logger?->warning(
-                    'Could not determine type for file: {file}.',
-                    ['file' => $file],
-                );
-
-                continue;
-            }
-
-            if ( $fileInfo->isDir() ) {
-                $path = [];
-
-                foreach ( \glob( "{$fileInfo}/*.*" ) ?: [] as $subDirectory ) {
-                    $segmentFileInfo = new \Support\FileInfo( $subDirectory );
-                    if ( $type ) {
-                        if ( Type::from( $segmentFileInfo->getExtension() ) !== $type ) {
-                            $this->logger?->warning( 'Unexpected file type in asset directory.' );
-                        }
-                        else {
-                            $path[] = $segmentFileInfo->getRealPath();
-                        }
-                    }
-                    else {
-                        $path[] = $segmentFileInfo->getRealPath();
-                    }
-                }
-            }
-            else {
-                $path = $fileInfo->getRealPath();
-            }
-
-            if ( ! $path ) {
-                continue;
-            }
-
-            $found[$fileInfo->getFilename()] = [
-                'name' => $fileInfo->getFilename(),
-                'type' => $fileInfo->getType(),
-                'path' => $path,
-            ];
-        }
-        return $found;
     }
 }
