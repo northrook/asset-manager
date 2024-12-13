@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager;
 
-use Core\Service\AssetManager\Asset\{AssetModelInterface};
+use Core\Service\AssetManager\AssetManifest\{AssetModelInterface};
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
 /**

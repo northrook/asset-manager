@@ -2,8 +2,8 @@
 
 namespace Core\Service\AssetManager;
 
-use Core\Service\AssetManager\AssetManifest\AssetReference;
-use Northrook\{ArrayStore};
+use Core\Service\AssetManager\Asset\AssetReference;
+use Northrook\ArrayStore;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 

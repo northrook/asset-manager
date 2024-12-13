@@ -4,9 +4,9 @@ namespace Core\Service\AssetManager;
 
 use Core\{PathfinderInterface,
     Service\AssetManager,
-    Service\AssetManager\Asset\AssetModel,
+    Service\AssetManager\AssetManifest\AssetModel,
     Service\AssetManager\Asset\Type,
-    Service\AssetManager\Model\AssetModelInterface,
+    Service\AssetManager\Interface\AssetModelInterface,
     Service\AssetManager\Model\ScriptAsset,
     Service\AssetManager\Model\StyleAsset
 };
@@ -74,7 +74,7 @@ class AssetCompiler
 
      */
 
-    final public function compileAssets( Compiler\AssetReference ...$reference ) : self
+    final public function compileAssets( Compiler\ScannedAssetReference ...$reference ) : self
     {
         if ( ! $reference ) {
             foreach ( $this->foundAssets as $prefix => $foundReferences ) {
@@ -85,7 +85,7 @@ class AssetCompiler
         }
 
         foreach ( $reference as $key => $asset ) {
-            // $asset = $this->compile( $asset );
+            $asset = $this->compile( $asset );
             // // $compile = match ( $type ) {
             // //     Type::STYLE    => $this->discoverStyleAssets( $path ),
             // //     Type::SCRIPT   => $this->discoverScriptAssets( $path ),
@@ -100,9 +100,11 @@ class AssetCompiler
         return $this;
     }
 
-    final public function compile( Compiler\AssetReference $assetReference ) : ?AssetModelInterface
+    final public function compile( Compiler\ScannedAssetReference $assetReference ) : ?AssetModelInterface
     {
-        return match ( $assetReference->type ) {
+        // Takes an AssetInfo, generates an AssetModel, stores AssetReference in AssetManifest
+
+        $model = match ( $assetReference->type ) {
             Type::STYLE  => StyleAsset::fromReference( $assetReference ),
             Type::SCRIPT => ScriptAsset::fromReference( $assetReference ),
             // Type::FONT     => $this->discoverFontAssets( $path ),
@@ -111,6 +113,18 @@ class AssetCompiler
             // Type::DOCUMENT => $this->discoverDocumentAssets( $path ),
             default => null,
         };
+
+        if ( ! $model ) {
+            $this->logger?->error( "Unknown asset reference: {$assetReference->type->name}" );
+            return null;
+        }
+
+        $this->manifest->register(
+            $model->getName(),
+            $model->getReference(),
+        );
+
+        return $model;
     }
 
     /**

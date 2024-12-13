@@ -2,6 +2,7 @@ parameters:
 	level: 9
 	paths:
 		- src
+	treatPhpDocTypesAsCertain: false
 	reportUnmatchedIgnoredErrors: false
 	ignoreErrors:
 		-
@@ -34,4 +35,8 @@ parameters:
 
 		-
 			message: "#Cannot cast mixed to .+.#"
+			path: *.php
+
+		-
+			message: "#Call to function .+implements_interface\\(\\).+will always evaluate to true.#"
 			path: *.php

@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Core\Service\AssetManager\Model;
+namespace Core\Service\AssetManager\Interface;
 
 use Core\{PathfinderInterface,
     Service\AssetManager\Asset\AssetInterface,
     Service\AssetManager\Asset\Type,
+    Service\AssetManager\Asset\AssetReference,
     SettingsInterface
 };
-use Core\Service\AssetManager\Compiler\AssetReference;
+use Core\Service\AssetManager\Compiler\ScannedAssetReference;
 use RuntimeException;
 
 interface AssetModelInterface
@@ -18,11 +19,16 @@ interface AssetModelInterface
 
     public function getPublicPath() : string;
 
+    /**
+     * @return string[]
+     */
     public function getSources() : array;
 
     public function getType() : Type;
 
-    public static function fromReference( AssetReference $reference ) : self;
+    public function getReference() : AssetReference;
+
+    public static function fromReference( ScannedAssetReference $reference ) : self;
 
     /**
      * @param null|array<string, array<array-key|string>|string> $attributes

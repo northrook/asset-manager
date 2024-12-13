@@ -1,14 +1,19 @@
 <?php
 
-namespace Core\Service\AssetManager\Compiler;
+namespace Core\Service\AssetManager\AssetManifest;
 
+use JetBrains\PhpStorm\Deprecated;
 use Northrook\HTML\Element;
 use Northrook\{JavaScriptMinifier};
 use Stringable;
-use Core\{PathfinderInterface, Service\AssetManager\Asset, SettingsInterface};
-use Core\Service\AssetManager\Asset\{AssetInterface, AssetModel, Source, Type};
+use Core\{PathfinderInterface,
+        Service\AssetManager\Asset,
+        Service\AssetManager\AssetManifest\AssetModel,
+        SettingsInterface};
+use Core\Service\AssetManager\Asset\{AssetInterface, Source, Type};
 use Support\Normalize;
 
+#[Deprecated]
 final class ScriptAsset extends AssetModel
 {
     private readonly JavaScriptMinifier $minifier;

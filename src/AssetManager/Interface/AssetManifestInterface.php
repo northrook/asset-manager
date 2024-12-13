@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager\Interface;
 
-use Core\Service\AssetManager\Asset\AssetModelInterface;
+use Core\Service\AssetManager\AssetManifest\AssetModelInterface;
 
 interface AssetManifestInterface
 {
@@ -24,7 +24,7 @@ interface AssetManifestInterface
      *
      * @param string $asset
      *
-     * @return ?AssetModelInterface
+     * @return ?\Core\Service\AssetManager\AssetManifest\AssetModelInterface
      */
     public function getAssetBlueprint( string $asset ) : ?AssetModelInterface;
 }

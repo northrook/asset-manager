@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Core\Service\AssetManager\Asset;
+namespace Core\Service\AssetManager\AssetManifest;
 
 use Core\{PathfinderInterface, SettingsInterface};
+use Core\Service\AssetManager\Asset\AssetInterface;
+use JetBrains\PhpStorm\Deprecated;
 use RuntimeException;
 
+#[Deprecated]
 interface AssetModelInterface
 {
     /**

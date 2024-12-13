@@ -16,7 +16,7 @@ use Stringable;
 /**
  * @implements IteratorAggregate<int, string>
  */
-final readonly class AssetReference extends DataObject implements Countable, IteratorAggregate
+final readonly class ScannedAssetReference extends DataObject implements Countable, IteratorAggregate
 {
     public string $name;
 

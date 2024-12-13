@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Core\Service\AssetManager\Asset;
+namespace Core\Service\AssetManager\AssetManifest;
 
+use Core\Service\AssetManager\Asset\Source;
+use Core\Service\AssetManager\Asset\Type;
+use Core\Service\AssetManager\AssetManifest\AssetModelInterface;
+use JetBrains\PhpStorm\Deprecated;
 use Stringable;
 use Support\Normalize;
 use function String\hashKey;
 
+#[Deprecated]
 abstract class AssetModel implements AssetModelInterface
 {
     public readonly string $name;

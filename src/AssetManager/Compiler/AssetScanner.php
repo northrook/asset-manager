@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types = 1 );
+declare(strict_types=1);
 
 namespace Core\Service\AssetManager\Compiler;
 
@@ -12,7 +12,7 @@ use ArrayIterator;
 use IteratorAggregate;
 
 /**
- * @implements IteratorAggregate<string, AssetReference>
+ * @implements IteratorAggregate<string, ScannedAssetReference>
  */
 final class AssetScanner implements IteratorAggregate
 {
@@ -22,23 +22,22 @@ final class AssetScanner implements IteratorAggregate
 
     private readonly string $directoryPath;
 
-    /** @var array<string, AssetReference> */
+    /** @var array<string, ScannedAssetReference> */
     private array $results = [];
 
     public function __construct(
-            string                            $directoryPath,
-            private readonly ?Type            $type = null,
-            private readonly ?LoggerInterface $logger = null,
-    )
-    {
+        string                            $directoryPath,
+        private readonly ?Type            $type = null,
+        private readonly ?LoggerInterface $logger = null,
+    ) {
         $this->directoryPath = Normalize::path( $directoryPath );
         $this->parseScannedFileInfo(
-                ...$this->directoryScan(),
+            ...$this->directoryScan(),
         );
     }
 
     /**
-     * @return ArrayIterator<string, AssetReference>
+     * @return ArrayIterator<string, ScannedAssetReference>
      */
     public function getIterator() : Traversable
     {
@@ -47,11 +46,11 @@ final class AssetScanner implements IteratorAggregate
 
     public function hasResults() : bool
     {
-        return !empty( $this->results );
+        return ! empty( $this->results );
     }
 
     /**
-     * @return array<string, AssetReference>
+     * @return array<string, ScannedAssetReference>
      */
     public function getResults() : array
     {
@@ -59,7 +58,7 @@ final class AssetScanner implements IteratorAggregate
     }
 
     /**
-     * @param null|self::SCAN_DIRECTORIES|self::SCAN_FILES|string  $glob
+     * @param null|self::SCAN_DIRECTORIES|self::SCAN_FILES|string $glob
      *
      * @return FileInfo[]
      */
@@ -69,12 +68,12 @@ final class AssetScanner implements IteratorAggregate
 
         $scan = [];
 
-        foreach ( \glob( $this->directoryPath . $glob ) ?: [] as $file ) {
+        foreach ( \glob( $this->directoryPath.$glob ) ?: [] as $file ) {
             $reference = new FileInfo( $file );
-            if ( !$reference->getType() ) {
+            if ( ! $reference->getType() ) {
                 $this->logger?->warning(
-                        'Could not determine type for file: {file}.',
-                        [ 'file' => $file ],
+                    'Could not determine type for file: {file}.',
+                    ['file' => $file],
                 );
 
                 continue;
@@ -110,20 +109,21 @@ final class AssetScanner implements IteratorAggregate
                 }
             }
             else {
-                $path = [ $reference->getRealPath() ];
+                $path = [$reference->getRealPath()];
             }
 
-            if ( !$path ) {
+            if ( ! $path ) {
                 continue;
             }
 
-            $asset = new AssetReference(
-                    $reference->getFilename(),
-                    $reference,
-                    $path,
-                    $this->type );
+            $asset = new ScannedAssetReference(
+                $reference->getFilename(),
+                $reference,
+                $path,
+                $this->type,
+            );
 
-            $this->results[ $asset->name ] = $asset;
+            $this->results[$asset->name] = $asset;
         }
 
         return $this;

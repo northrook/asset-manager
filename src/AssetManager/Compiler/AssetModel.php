@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Core\Service\AssetManager\Model;
+namespace Core\Service\AssetManager\Compiler;
 
-use Core\Service\AssetManager\Compiler\AssetReference;
+use Core\Service\AssetManager\Compiler\ScannedAssetReference;
+use Core\Service\AssetManager\Interface\AssetModelInterface;
 use Northrook\ArrayStore;
 
 abstract class AssetModel implements AssetModelInterface
@@ -19,5 +20,5 @@ abstract class AssetModel implements AssetModelInterface
     {
     }
 
-    abstract public static function fromReference( AssetReference $reference ) : AssetModel;
+    abstract public static function fromReference( ScannedAssetReference $reference ) : self;
 }
