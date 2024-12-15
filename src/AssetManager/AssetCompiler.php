@@ -2,6 +2,7 @@
 
 namespace Core\Service\AssetManager;
 
+use JetBrains\PhpStorm\Deprecated;
 use Core\{PathfinderInterface,
     Service\AssetManager,
     Service\AssetManager\AssetManifest\AssetModel,
@@ -12,12 +13,11 @@ use Core\{PathfinderInterface,
 };
 use Psr\Log\LoggerInterface;
 use Support\Normalize;
-use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\Filesystem\Filesystem;
 use const Support\AUTO;
 use InvalidArgumentException;
 
-#[Autoconfigure( lazy : true )]
+#[Deprecated]
 class AssetCompiler
 {
     private static ?Filesystem $filesystem;
@@ -51,6 +51,39 @@ class AssetCompiler
     ) {
         // Reset the Filesystem on initialization
         AssetCompiler::$filesystem = null;
+    }
+
+    /**
+     * Retrieve one or more root asset directories by {@see Type}
+     *
+     * @param 'document'|'font'|'image'|'root'|'script'|'style'|'video'|Type ...$scan
+     *
+     * @return self
+     */
+    final public function scanDirectories( string|Type ...$scan ) : self
+    {
+        foreach ( $this->getAssetDirectories( ...$scan ) as $key => $directory ) {
+            $type = Type::from( $key ) ?? null;
+            $path = $this->pathfinder->get( $directory );
+
+            if ( ! $path ) {
+                $this->logger?->error( 'No path found for '.$directory );
+
+                continue;
+            }
+
+            if ( ! \file_exists( $path ) ) {
+                $this->filesystem()->mkdir( $path );
+            }
+
+            $scan = new Compiler\AssetScanner( $path, $type, $this->logger );
+
+            if ( $scan->hasResults() ) {
+                $this->foundAssets[$key] = $scan->getResults();
+            }
+        }
+
+        return $this;
     }
 
     /*
@@ -127,29 +160,6 @@ class AssetCompiler
         return $model;
     }
 
-    /**
-     * Retrieve one or more root asset directories by {@see Type}
-     *
-     * @param 'document'|'font'|'image'|'root'|'script'|'style'|'video'|Type ...$scan
-     *
-     * @return self
-     */
-    final public function scanDirectories( string|Type ...$scan ) : self
-    {
-        foreach ( $this->getAssetDirectories( ...$scan ) as $key => $directory ) {
-            $type = Type::from( $key ) ?? null;
-            $path = $this->pathfinder->get( $directory );
-
-            $scan = new Compiler\AssetScanner( $path, $type, $this->logger );
-
-            if ( $scan->hasResults() ) {
-                $this->foundAssets[$key] = $scan->getResults();
-            }
-        }
-
-        return $this;
-    }
-
     final public function publicAssetPath(
         string            $path,
         null|string|false $directory = AUTO,
@@ -194,6 +204,9 @@ class AssetCompiler
      */
     final public function prepareAssetDirectories( bool $returnException = false ) : true|InvalidArgumentException
     {
+        // Inverted validation - assume everything will be OK
+        $result = true;
+
         foreach ( $this->assetDirectories as $key => $directory ) {
             $path = $this->pathfinder->getFileInfo( $directory );
 
@@ -216,6 +229,7 @@ class AssetCompiler
             }
         }
 
+        // Throw Exceptions by default
         if ( $result instanceof InvalidArgumentException && false === $returnException ) {
             throw $result;
         }

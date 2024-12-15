@@ -3,6 +3,7 @@
 namespace Core\Service\AssetManager;
 
 use Core\Service\AssetManager\Asset\AssetReference;
+use Core\Service\AssetManager\Exception\UndefinedAssetReferenceException;
 use Northrook\ArrayStore;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
@@ -14,7 +15,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 )]
 class AssetManifest
 {
-    /** @var ArrayStore<string, AssetReference> */
+    /** @var ArrayStore<string, array> */
     private readonly ArrayStore $manifest;
 
     final public function __construct(
@@ -25,9 +26,12 @@ class AssetManifest
             $storagePath,
             $this::class,
             false,
-            false, // ::[DEBUG]
+            true, // ::[DEBUG]
             $logger,
         );
+        if ( ! \file_exists( $storagePath ) ) {
+            $this->manifest->save();
+        }
     }
 
     final public function has( string $asset ) : bool
@@ -38,16 +42,22 @@ class AssetManifest
     /**
      * @param string $asset
      *
-     * @return null|array<string, AssetReference>|AssetReference
+     * @return ?AssetReference
      */
-    final public function get( string $asset ) : mixed
+    final public function get( string $asset ) : ?AssetReference
     {
-        return $this->manifest->get( $asset );
+        $reference = $this->manifest->get( $asset );
+
+        if ( ! $reference ) {
+            throw new UndefinedAssetReferenceException( $asset, \array_keys( $this->manifest->flatten() ) );
+        }
+
+        return AssetReference::hydrate( ...$reference );
     }
 
-    final public function register( string $asset, AssetReference $reference ) : self
+    final public function register( AssetReference $reference ) : self
     {
-        $this->manifest->set( $asset, $reference );
+        $this->manifest->set( $reference->name, $reference->toArray() );
         return $this;
     }
 }

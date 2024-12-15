@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager\Asset;
 
-use Core\Service\AssetManager\Interface\AssetModelInterface;
 use Support\Interface\DataObject;
 use Support\Normalize;
 use Stringable;
-use function Support\implements_interface;
+use InvalidArgumentException;
+use UnitEnum;
 
 /**
  * Created by the {@see \Core\Service\AssetManager\AssetCompiler}, stored in the {@see \Core\Service\AssetManager\AssetManifest}.
@@ -23,30 +23,139 @@ final readonly class AssetReference extends DataObject
 {
     public string $name;
 
-    public string $relativeUrl;
+    /** @var string `relative` */
+    public string $publicUrl;
 
-    public Properties $properties;
+    /** @var string|string[] `relative` */
+    public string|array $source;
+
+    public Type $type;
+
+    public ?Properties $properties;
+
+    private function __construct()
+    {
+    }
 
     /**
-     * @param string|Stringable                 $name
-     * @param string|Stringable                 $relativeUrl
-     * @param string                            $sourcePath  // if dir, use content
-     * @param class-string<AssetModelInterface> $model
-     * @param Type                              $type
-     * @param array                             $properties
+     * @param string                                                  $name
+     * @param Type                                                    $type
+     * @param string|string[]                                         $source
+     * @param string|Stringable                                       $publicUrl
+     * @param null|array<string, null|bool|float|int|string|UnitEnum> $properties
+     *
+     * @return AssetReference
      */
-    public function __construct(
-        string|Stringable $name,
-        string|Stringable $relativeUrl,
-        public string     $sourcePath,
-        public string     $model,
-        public Type       $type,
-        array             $properties,
-    ) {
-        $this->name        = Normalize::key( (string) $name, '.' );
-        $this->relativeUrl = Normalize::url( (string) $relativeUrl );
-        \assert( implements_interface( $this->model, AssetModelInterface::class ) );
-        \assert( '/' === $this->relativeUrl[0] );
-        $this->properties = new Properties( $properties );
+    public static function create(
+        string            $name,
+        Type              $type,
+        string|array      $source,
+        string|Stringable $publicUrl,
+        ?array            $properties = [],
+    ) : AssetReference {
+        $reference = new self();
+        $reference
+            ->type( $type )
+            ->name( $name )
+            ->publicUrl( $publicUrl )
+            ->source( $source )
+            ->properties( $properties );
+
+        return $reference;
+    }
+
+    private function type( Type $set ) : self
+    {
+        $this->type = $set;
+        return $this;
+    }
+
+    private function name( string $set ) : self
+    {
+        \assert( \ctype_alpha( \str_replace( ['.', '-'], '', $set ) ), $set );
+        $normalized = \strtolower( \trim( $set, '.' ) );
+        $fragments  = \explode( '.', $normalized );
+
+        $type         = \strtolower( $this->type->name );
+        $typeFragment = $fragments[0] ?? throw new InvalidArgumentException();
+
+        if ( ! ( $typeFragment === $type || $typeFragment === "{$type}s" ) ) {
+            \array_unshift( $fragments, $type );
+        }
+        $this->name = \implode( '.', \array_filter( $fragments ) );
+        return $this;
+    }
+
+    private function publicUrl( string|Stringable $string ) : self
+    {
+        $this->publicUrl = Normalize::url( (string) $string );
+        \assert( '/' === $this->publicUrl[0] );
+        return $this;
+    }
+
+    /**
+     * @param string|string[] $set
+     *
+     * @return self
+     */
+    private function source( string|array $set ) : self
+    {
+        foreach ( (array) $set as $source ) {
+            \assert( \is_string( $source ) );
+        }
+
+        $this->source = $set;
+        return $this;
+    }
+
+    /**
+     * @param null|array<string, null|bool|float|int|string|UnitEnum> $set
+     *
+     * @return $this
+     */
+    private function properties( ?array $set ) : self
+    {
+        $this->properties = $set ? new Properties( $set ) : null;
+        return $this;
+    }
+
+    /**
+     * @param string                                                  $name
+     * @param string                                                  $publicUrl
+     * @param string|string[]                                         $source
+     * @param string                                                  $type
+     * @param null|array<string, null|bool|float|int|string|UnitEnum> $properties
+     *
+     * @return AssetReference
+     */
+    public static function hydrate(
+        string       $name,
+        string       $publicUrl,
+        string|array $source,
+        string       $type,
+        ?array       $properties,
+    ) : AssetReference {
+        $reference = new self();
+
+        $reference->type       = Type::from( $type, true );
+        $reference->name       = $name;
+        $reference->publicUrl  = $publicUrl;
+        $reference->source     = $source;
+        $reference->properties = $properties ? new Properties( $properties ) : null;
+
+        return $reference;
+    }
+
+    final public function toArray() : array
+    {
+        $properties = $this->properties?->getIterator();
+
+        return [
+            'name'       => $this->name,
+            'publicUrl'  => $this->publicUrl,
+            'source'     => $this->source,
+            'type'       => $this->type->name,
+            'properties' => $properties ? \iterator_to_array( $properties ) : null,
+        ];
     }
 }
