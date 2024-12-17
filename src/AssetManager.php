@@ -4,17 +4,32 @@ declare(strict_types=1);
 
 namespace Core\Service;
 
-use Core\{Service\AssetManager\Asset\AssetInterface, Service\AssetManager\AssetCompiler};
-use Core\Service\AssetManager\AssetFactory;
+use Core\{PathfinderInterface,
+        Service\AssetManager\Asset\AssetInterface,
+        Service\AssetManager\Asset\AssetModelInterface,
+        Service\AssetManager\Asset\AssetReference,
+        Service\AssetManager\Asset\Type,
+        Service\AssetManager\AssetLocator,
+        Service\AssetManager\AssetManifest,
+        Service\AssetManager\Exception\InvalidAssetTypeException,
+        Service\AssetManager\Interface\AssetManagerInterface,
+        Service\AssetManager\Model\ImageAsset,
+        Service\AssetManager\Model\ScriptAsset,
+        Service\AssetManager\Model\StyleAsset,
+        SettingsInterface};
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
+use Symfony\Contracts\Cache\CacheInterface;
+use RuntimeException;
 
-final readonly class AssetManager
+#[Autoconfigure( lazy : true, public : false )]
+class AssetManager implements AssetManagerInterface
 {
     public const string
-        DIR_ASSETS_KEY = 'dir.assets',       // where to find application assets
-        DIR_PUBLIC_KEY = 'dir.public',       // publicly available assets
-        URL_PUBLIC_KEY = 'url.public',       // application url; example.com
-        DIR_BUILD_KEY  = 'dir.assets.build'; // store optimized and cached assets
+        DIR_ASSETS_KEY = 'dir.assets',         // where to find application assets
+        DIR_PUBLIC_KEY = 'dir.assets.public',  // publicly available assets
+        URL_PUBLIC_KEY = 'url.public',         // application url; example.com
+        DIR_BUILD_KEY  = 'dir.assets.build';   // store optimized and cached assets
 
     public const string
         DIR_ASSETS    = 'dir.assets',
@@ -25,92 +40,147 @@ final readonly class AssetManager
         DIR_VIDEOS    = 'dir.assets/videos',
         DIR_DOCUMENTS = 'dir.assets/documents';
 
-    public function __construct(
-        protected AssetCompiler    $compiler,
-        protected ?LoggerInterface $logger = null,
+    /** @var array<string, callable(AssetModelInterface):AssetModelInterface> */
+    protected array $assetModelCallback = [];
+
+    /** @var array<string, callable(AssetModelInterface):AssetModelInterface> */
+    protected array $assetTypeCallback = [];
+
+    final public function __construct(
+        protected readonly AssetManifest       $manifest,
+        protected readonly AssetLocator        $locator,
+        protected readonly PathfinderInterface $pathfinder,
+        protected readonly ?SettingsInterface  $settings = null,
+        protected readonly ?CacheInterface     $cache = null,
+        protected readonly ?LoggerInterface    $logger = null,
+        protected bool                         $lock = false,
     ) {
     }
 
-    // {
-    //     /** @var null|string[] */
-    //     protected ?array $deployed = null;
-    //
-    //     /** @var string[] */
-    //     protected array $enqueued = [];
-    //
-    //     /**
-    //      * @param AssetFactory     $factory
-    //      * @param ?LoggerInterface $logger
-    //      *
-    //      * @noinspection PhpPropertyOnlyWrittenInspection
-    //      */
-    //     public function __construct(
-    //         private readonly AssetFactory     $factory,
-    //         private readonly ?LoggerInterface $logger = null,
-    //     ) {
-    //     }
-    //
-    //     /**
-    //      * Indicate that one or more assets have already been resolved.
-    //      *
-    //      * These will be skipped on {@see self::resolveEnqueuedAssets()}.
-    //      *
-    //      * @param string ...$deployed
-    //      *
-    //      * @return void
-    //      */
-    //     public function setDeployed( string ...$deployed ) : void
-    //     {
-    //         $this->deployed = $deployed;
-    //     }
-    //
-    //     /**
-    //      * Enqueue one or more assets to later be resolved.
-    //      *
-    //      * @param string ...$name
-    //      *
-    //      * @return void
-    //      */
-    //     public function enqueueAsset( string ...$name ) : void
-    //     {
-    //         foreach ( $this->enqueued as $asset ) {
-    //             $this->enqueued[$asset] ??= $asset;
-    //         }
-    //     }
-    //
-    //     // TODO : Check if asset is registered somewhere
-    //     public function hasEnqueued( string $name ) : bool
-    //     {
-    //         return isset( $this->enqueued[$name] );
-    //     }
-    //
-    //     public function renderAsset( string $name, array $attributes = [] ) : ?AssetInterface
-    //     {
-    //         dump( [__METHOD__, $name, $attributes, AssetInterface::class] );
-    //         return null;
-    //     }
-    //
-    //     public function resolveEnqueuedAssets( bool $cached = true ) : array
-    //     {
-    //         dump(
-    //             [
-    //                 __METHOD__,
-    //                 'enqueued' => $this->enqueued,
-    //                 'cached'   => $cached,
-    //                 [AssetInterface::class],
-    //             ],
-    //         );
-    //
-    //         return [];
-    //     }
-    //
-    //     public function getEnqueuedAssets() : array
-    //     {
-    //         return $this->enqueued;
-    //     }
-    //
-    //     // private function assetFactory() : AssetFactory
-    //     // {
-    //     //     return ( $this->lazyFactory )();
-    //     // }
+    final public function assetModelCallback( string $asset, callable $callback ) : void
+    {
+        if ( $this->lock ) {
+            $message = "Unable to add assetModelCallback to '{$asset}', the AssetManager is locked.";
+            throw new RuntimeException( $message );
+        }
+        $this->assetModelCallback[$asset] = $callback;
+    }
+
+    final public function assetTypeCallback( Type $type, callable $callback ) : void
+    {
+        if ( $this->lock ) {
+            $message = "Unable to add assetTypeCallback to '{$type->name}', the AssetManager is locked.";
+            throw new RuntimeException( $message );
+        }
+        $this->assetTypeCallback[$type->name] = $callback;
+    }
+
+    /**
+     * @param string                                    $asset
+     * @param ?string                                   $assetID
+     * @param array<string, null|bool|float|int|string> $attributes
+     * @param bool                                      $nullable   [false] throw by default
+     *
+     * @return ($nullable is true ? null|AssetInterface : AssetInterface)
+     */
+    final public function get(
+        string  $asset,
+        ?string $assetID = null,
+        array   $attributes = [],
+        bool    $nullable = false,
+    ) : ?AssetInterface {
+        $assetModel = $this->getAssetModel( $asset, $assetID, $nullable );
+
+        if ( \is_null( $assetModel ) && $nullable ) {
+            return null;
+        }
+
+        \assert( $assetModel instanceof AssetModelInterface );
+
+        $this->handleAssetCallback( $assetModel );
+
+        // TODO : Handle cache
+
+        $resolved = $assetModel->render( $attributes );
+
+        dump( $assetModel, $resolved );
+
+        return $resolved;
+    }
+
+    /**
+     * @param AssetReference|string $asset
+     * @param ?string               $assetID
+     * @param bool                  $nullable [false] throw by default
+     *
+     * @return ($nullable is true ? null|AssetModelInterface : AssetModelInterface )
+     */
+    final public function getAssetModel(
+        string|AssetReference $asset,
+        ?string               $assetID = null,
+        bool                  $nullable = false,
+    ) : ?AssetModelInterface {
+        if ( \is_string( $asset ) ) {
+            // TODO: Handle autoDiscover on missing AssetReference
+            $asset = $this->manifest->get( $asset );
+        }
+
+        \assert( $asset instanceof AssetReference );
+
+        $model = $this->assetModel( $asset->type );
+
+        if ( \is_null( $model ) && $nullable ) {
+            return null;
+        }
+
+        return $model::fromReference(
+            $asset,
+            $this->pathfinder,
+        )->build( $assetID, $this->settings );
+    }
+
+    /**
+     * @param Type $from
+     * @param bool $nullable [false] throw by default
+     *
+     * @return ($nullable is true ? null|class-string<AssetModelInterface> : class-string<AssetModelInterface> )
+     */
+    final protected function assetModel( Type $from, bool $nullable = false ) : ?string
+    {
+        $assetModel = match ( $from ) {
+            Type::STYLE  => StyleAsset::class,
+            Type::SCRIPT => ScriptAsset::class,
+            Type::IMAGE  => ImageAsset::class,
+            default      => null,
+        };
+
+        if ( $assetModel ) {
+            return $assetModel;
+        }
+
+        return $nullable ? null : throw new InvalidAssetTypeException( $from );
+    }
+
+    /**
+     * Handle registered pre-render `callback` functions.
+     *
+     * @param AssetModelInterface $assetModel
+     *
+     * @return void
+     */
+    private function handleAssetCallback( AssetModelInterface &$assetModel ) : void
+    {
+        if ( \array_key_exists(
+            $assetModel->getType()->name,
+            $this->assetTypeCallback,
+        ) ) {
+            $assetModel = ( $this->assetTypeCallback[$assetModel->getType()->name] )( $assetModel );
+        }
+        if ( \array_key_exists(
+            $assetModel->getName(),
+            $this->assetModelCallback,
+        ) ) {
+            $assetModel = ( $this->assetModelCallback[$assetModel->getName()] )( $assetModel );
+        }
+    }
 }

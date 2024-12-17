@@ -4,27 +4,19 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager\Interface;
 
-use Core\Service\AssetManager\AssetManifest\AssetModelInterface;
+use Core\Service\AssetManager\Asset\AssetReference;
 
 interface AssetManifestInterface
 {
-    public function registerAsset( AssetModelInterface $asset ) : void;
-
-    public function hasAsset( string $name ) : bool;
+    public function has( string|AssetReference $asset ) : bool;
 
     /**
-     * Returns only manually registered assets.
-     *
-     * @return \Core\Service\AssetManager\Interface\AssetModelInterface[]
-     */
-    public function getRegisteredAssets() : array;
-
-    /**
-     * Return an {@see AssetModelInterface} if registered.
-     *
      * @param string $asset
+     * @param bool   $nullable [false] throw by default
      *
-     * @return ?\Core\Service\AssetManager\AssetManifest\AssetModelInterface
+     * @return ($nullable is true ? null|AssetReference : AssetReference)
      */
-    public function getAssetBlueprint( string $asset ) : ?AssetModelInterface;
+    public function get( string $asset, bool $nullable = false ) : ?AssetReference;
+
+    public function register( AssetReference $reference ) : self;
 }

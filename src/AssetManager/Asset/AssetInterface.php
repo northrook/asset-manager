@@ -11,27 +11,25 @@ use Stringable;
  *
  * @author  Martin Nielsen <mn@northrook.com>
  */
-interface AssetInterface
+interface AssetInterface extends Stringable
 {
     /**
-     * Used when the {@see AssetManagerInterface} is `calling` the `asset`.
-     *
-     * This class __only__ handles a fully resolved asset.
+     * This class contains a fully resolved asset.
      *
      * @param string $name
      * @param string $assetID
-     * @param string $html
      * @param Type   $type
+     * @param string $html
      */
-    public function __construct( string $name, string $assetID, string $html, Type $type );
+    public function __construct( string $name, string $assetID, Type $type, string $html );
 
     /**
-     * @return string dot.separated lowercase
+     * @return string `dot.separated` lowercase
      */
     public function name() : string;
 
     /**
-     * @return string a 16 character hash
+     * @return string `16` character alphanumeric hash
      */
     public function assetID() : string;
 

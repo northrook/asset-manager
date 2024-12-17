@@ -120,11 +120,11 @@ final readonly class AssetReference extends DataObject
     }
 
     /**
-     * @param string                                                  $name
-     * @param string                                                  $publicUrl
-     * @param string|string[]                                         $source
-     * @param string                                                  $type
-     * @param null|array<string, null|bool|float|int|string|UnitEnum> $properties
+     * @param string          $name
+     * @param string          $publicUrl
+     * @param string|string[] $source
+     * @param string          $type
+     * @param ?string         $properties
      *
      * @return AssetReference
      */
@@ -133,7 +133,7 @@ final readonly class AssetReference extends DataObject
         string       $publicUrl,
         string|array $source,
         string       $type,
-        ?array       $properties,
+        ?string      $properties,
     ) : AssetReference {
         $reference = new self();
 
@@ -141,21 +141,22 @@ final readonly class AssetReference extends DataObject
         $reference->name       = $name;
         $reference->publicUrl  = $publicUrl;
         $reference->source     = $source;
-        $reference->properties = $properties ? new Properties( $properties ) : null;
+        $reference->properties = $properties ? \unserialize( $properties ) : null;
 
         return $reference;
     }
 
+    /**
+     * @return array{name: string, publicUrl: string, source: string|string[], type: string, properties: string}
+     */
     final public function toArray() : array
     {
-        $properties = $this->properties?->getIterator();
-
         return [
             'name'       => $this->name,
             'publicUrl'  => $this->publicUrl,
             'source'     => $this->source,
             'type'       => $this->type->name,
-            'properties' => $properties ? \iterator_to_array( $properties ) : null,
+            'properties' => $this->properties ? \serialize( $this->properties ) : null,
         ];
     }
 }

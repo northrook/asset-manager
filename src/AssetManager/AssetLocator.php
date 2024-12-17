@@ -16,7 +16,16 @@ use Symfony\Component\Finder\Finder;
 use const Support\AUTO;
 use SplFileInfo;
 
-#[Autoconfigure( lazy : true, public : false )]
+/**
+ * Locates `assets`, registering each as an {@see AssetReference} in the {@see AssetManifest}.
+ *
+ * Does **not**:
+ * - Generate asset files
+ * - Modify source assets
+ *
+ * @used-by AssetManager
+ */
+#[Autoconfigure( lazy : true, public : false, autowire : false )]
 class AssetLocator implements ActionInterface
 {
     /** @var array<string, string> */
@@ -30,11 +39,7 @@ class AssetLocator implements ActionInterface
         'document' => AssetManager::DIR_DOCUMENTS,
     ];
 
-    /** @var string appends the {@see self::publicAssetPath}. */
-    private string $defaultDirectory = 'assets';
-
-    /** @var array */
-    private array $located = [];
+    // private array $
 
     /**
      * @param PathfinderInterface $pathfinder
@@ -73,9 +78,11 @@ class AssetLocator implements ActionInterface
     final public function discover( string|Type ...$scan ) : self
     {
         foreach ( $this->scan( ...$scan ) as $reference ) {
-            dump( $reference->toArray() );
             $this->manifest->register( $reference );
         }
+
+        $this->manifest->updateEditorMeta( $this->pathfinder->get( 'dir.root' ) );
+
         return $this;
     }
 
@@ -289,7 +296,12 @@ class AssetLocator implements ActionInterface
         // Inverted validation - assume everything will be OK
         $result = true;
 
-        foreach ( $this->assetDirectories as $key => $directory ) {
+        $scanPathfinderKeys = [
+            'public' => AssetManager::DIR_PUBLIC_KEY,
+            ...$this->assetDirectories,
+        ];
+
+        foreach ( $scanPathfinderKeys as $key => $directory ) {
             $path = $this->pathfinder->getFileInfo( $directory );
 
             // If the path is empty or not a directory, it is invalid
@@ -382,37 +394,37 @@ class AssetLocator implements ActionInterface
 
         return $relativePath;
     }
-
-    #[Deprecated( '❔' )]
-    final public function publicAssetPath(
-        string            $path,
-        null|string|false $directory = AUTO,
-        bool              $relative = false,
-    ) : ?string {
-        if ( false !== $directory ) {
-            $directory ??= $this->defaultDirectory;
-            $path = $directory.DIRECTORY_SEPARATOR.$path;
-        }
-
-        $path       = AssetManager::DIR_PUBLIC_KEY.DIRECTORY_SEPARATOR.$path;
-        $relativeTo = $relative ? AssetManager::DIR_PUBLIC_KEY : null;
-
-        return $this->pathfinder->get( $path, $relativeTo );
-    }
-
-    #[Deprecated( '❔' )]
-    final public function publicAssetsUrl(
-        string            $path,
-        null|string|false $directory = AUTO,
-        bool              $absolute = false,
-    ) : string {
-        $pathFromPublic = $this->publicAssetPath( $path, $directory, true );
-
-        if ( ! $pathFromPublic ) {
-            $message = __METHOD__.': resolved path is empty.';
-            throw new InvalidArgumentException( $message );
-        }
-
-        return Normalize::url( $pathFromPublic );
-    }
+    //
+    // #[Deprecated( '❔' )]
+    // final public function publicAssetPath(
+    //     string            $path,
+    //     null|string|false $directory = AUTO,
+    //     bool              $relative = false,
+    // ) : ?string {
+    //     if ( false !== $directory ) {
+    //         $directory ??= $this->defaultDirectory;
+    //         $path = $directory.DIRECTORY_SEPARATOR.$path;
+    //     }
+    //
+    //     $path       = AssetManager::DIR_PUBLIC_KEY.DIRECTORY_SEPARATOR.$path;
+    //     $relativeTo = $relative ? AssetManager::DIR_PUBLIC_KEY : null;
+    //
+    //     return $this->pathfinder->get( $path, $relativeTo );
+    // }
+    //
+    // #[Deprecated( '❔' )]
+    // final public function publicAssetsUrl(
+    //     string            $path,
+    //     null|string|false $directory = AUTO,
+    //     bool              $absolute = false,
+    // ) : string {
+    //     $pathFromPublic = $this->publicAssetPath( $path, $directory, true );
+    //
+    //     if ( ! $pathFromPublic ) {
+    //         $message = __METHOD__.': resolved path is empty.';
+    //         throw new InvalidArgumentException( $message );
+    //     }
+    //
+    //     return Normalize::url( $pathFromPublic );
+    // }
 }
