@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Core\Service;
 
 use Core\{PathfinderInterface,
-        Service\AssetManager\Asset\AssetInterface,
-        Service\AssetManager\Asset\AssetModelInterface,
-        Service\AssetManager\Asset\AssetReference,
-        Service\AssetManager\Asset\Type,
-        Service\AssetManager\AssetLocator,
-        Service\AssetManager\AssetManifest,
-        Service\AssetManager\Exception\InvalidAssetTypeException,
-        Service\AssetManager\Interface\AssetManagerInterface,
-        Service\AssetManager\Model\ImageAsset,
-        Service\AssetManager\Model\ScriptAsset,
-        Service\AssetManager\Model\StyleAsset,
-        SettingsInterface};
+    Service\AssetManager\Asset\AssetInterface,
+    Service\AssetManager\Asset\AssetModelInterface,
+    Service\AssetManager\Asset\AssetReference,
+    Service\AssetManager\Asset\Type,
+    Service\AssetManager\AssetLocator,
+    Service\AssetManager\AssetManifest,
+    Service\AssetManager\Exception\InvalidAssetTypeException,
+    Service\AssetManager\Exception\UndefinedAssetReferenceException,
+    Service\AssetManager\Interface\AssetManagerInterface,
+    Service\AssetManager\Model\ImageAsset,
+    Service\AssetManager\Model\ScriptAsset,
+    Service\AssetManager\Model\StyleAsset,
+    SettingsInterface
+};
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -122,7 +124,23 @@ class AssetManager implements AssetManagerInterface
     ) : ?AssetModelInterface {
         if ( \is_string( $asset ) ) {
             // TODO: Handle autoDiscover on missing AssetReference
-            $asset = $this->manifest->get( $asset );
+            try {
+                $asset = $this->manifest->get( $asset );
+            }
+            catch ( UndefinedAssetReferenceException $exception ) {
+                $validType = Type::from( \strstr( $asset, '.', true ) ?: $asset );
+                if ( $validType ) {
+                    $this->logger?->warning(
+                        'Unable to resolve asset model for {asset} with type {type}. Autodiscover triggered.',
+                        ['asset' => $asset, 'type' => $validType->name],
+                    );
+                    $this->locator->discover( $validType );
+                }
+                else {
+                    throw $exception;
+                }
+                $asset = $this->manifest->get( $asset, true );
+            }
         }
 
         \assert( $asset instanceof AssetReference );

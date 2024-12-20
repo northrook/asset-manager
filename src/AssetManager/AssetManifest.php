@@ -26,7 +26,7 @@ class AssetManifest implements AssetManifestInterface
     ) {
         $this->manifest = new ArrayStore(
             $storagePath,
-            $this::class,
+            'AssetManifest',
             false,
             true, // ::[DEBUG]
             $logger,

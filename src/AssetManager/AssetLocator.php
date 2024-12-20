@@ -49,7 +49,7 @@ class AssetLocator implements ActionInterface
     final public function __construct(
         private readonly PathfinderInterface $pathfinder,
         private readonly AssetManifest       $manifest,
-        private readonly ?LoggerInterface    $logger,
+        private readonly ?LoggerInterface    $logger = null,
     ) {
     }
 

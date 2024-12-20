@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Core\Service\AssetManager\Asset;
 
+use JetBrains\PhpStorm\Deprecated;
 use Support\Interface\DataObject;
 use Support\Normalize;
 use Stringable;
@@ -19,6 +20,7 @@ use UnitEnum;
  *
  * @author Martin Nielsen
  */
+#[Deprecated]
 final readonly class AssetReference extends DataObject
 {
     public string $name;
