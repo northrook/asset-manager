@@ -11,22 +11,22 @@
   ],
   "autoload": {
     "psr-4": {
-      "Core\\Service\\": "src/"
+      "Core\\": "src"
     }
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
   "require": {
     "php": ">=8.3",
-    "northrook/pathfinder": "dev-main",
-    "northrook/settings": "dev-main",
-    "northrook/minify": "dev-main"
+    "northrook/core": "dev-main",
+    "northrook/pathfinder": "dev-main"
   },
   "require-dev": {
-    "symfony/framework-bundle": "@stable",
-    "northrook/dev-env": "dev-main",
-    "northrook/core-symfony": "dev-main",
-    "latte/latte": "^3.0"
+    "phpstan/phpstan": " @stable",
+    "northrook/php-cs": "dev-main",
+    "jetbrains/phpstorm-attributes": "^1.2",
+    "tracy/tracy": "*",
+    "northrook/view-document": "dev-main"
   },
   "scripts": {
     "phpstan": "vendor/bin/phpstan analyse"

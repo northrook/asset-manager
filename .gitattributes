@@ -8,8 +8,11 @@ docs                    export-ignore
 .php-cs-fixer.dist.php  export-ignore
 .phpstorm.meta.php      export-ignore
 *.neon                  export-ignore
+package.json            export-ignore
+tailwind.config.js      export-ignore
+postcss.config.js       export-ignore
 phpunit.xml.dist        export-ignore
-phpbench.json           export-ignore
+.phpstorm.meta.php/*    export-ignore
 
 # Auto detect text files and perform LF normalization
 * text=auto eol=lf

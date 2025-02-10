@@ -1,21 +1,19 @@
 ### Editor
 /.ide/
 /.idea/
+/.phpstorm.meta.php/
 *.code-workspace
 
 ### Dev
 /vendor
-/assets
-/public
 /node_modules
 /*.cache
 /*.lock
 /*.css
 /index.php
-package-lock.json
+/package-lock.json
 
 ### Symfony
-/config/secrets/prod/prod.decrypt.private.php
 /var
 /public/cache
 /public/build
