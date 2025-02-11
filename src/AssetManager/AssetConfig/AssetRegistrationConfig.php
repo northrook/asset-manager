@@ -26,8 +26,10 @@ final class AssetRegistrationConfig
         return $this;
     }
 
-    public function image() : self
-    {
+    public function imageDirectory(
+        string $directoryPath,
+    ) : self {
+        $this->assets[$directoryPath] = new AssetReference();
         return $this;
     }
 
