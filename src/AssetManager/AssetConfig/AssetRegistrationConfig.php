@@ -11,7 +11,6 @@ final class AssetRegistrationConfig
 {
     public array $styles = [];
 
-    /** @var */
     public array $scripts = [];
 
     /** @var string[] */
@@ -32,12 +31,12 @@ final class AssetRegistrationConfig
         $name = $this->assetName( $name, Type::STYLE );
 
         foreach ( (array) $source as $path ) {
-            $path = new Pathfinder\Path( $path );
-            if ( $path->isRelative() ) {
+            $resolvePath = new Pathfinder\Path( $path );
+            if ( $resolvePath->isRelative() ) {
                 foreach ( $this->config->assetDirectories as $key ) {
-                    $this->styles[$name][] = $this->config
+                    $this->styles[$name][$key.$path] = $this->config
                         ->pathfinder
-                        ->get( "{$key}/{$path}" );
+                        ->get( $key.$path );
                 }
             }
             else {
@@ -58,17 +57,13 @@ final class AssetRegistrationConfig
 
         if ( $path->isRelative() ) {
             foreach ( $this->config->assetDirectories as $key ) {
-                $resolvePath = $this->config->pathfinder->getPath( "{$key}/{$path}" );
-
-                if ( $resolvePath->exists() ) {
-                    $path = $resolvePath;
-
-                    break;
-                }
+                $resolvePath                = $this->config->pathfinder->getPath( "{$key}/{$path}" );
+                $this->scripts[$name][$key] = $resolvePath->getRealPath();
             }
         }
-
-        $this->scripts[$name] = $path->getRealPath();
+        else {
+            $this->scripts[$name][] = $path->getRealPath();
+        }
 
         return $this;
     }
@@ -92,7 +87,9 @@ final class AssetRegistrationConfig
             throw new InvalidArgumentException( $message );
         }
 
-        \mkdir( $path->getRealPath(), 0777, true );
+        if ( ! $path->exists() ) {
+            \mkdir( $path->getRealPath(), 0777, true );
+        }
 
         $this->images[] = $path->getRealPath();
 
@@ -114,12 +111,15 @@ final class AssetRegistrationConfig
             $assets[$name] = $styles;
         }
 
-        foreach ( $this->scripts as $name => $script ) {
-            if ( ! \str_ends_with( $script, '.js' ) ) {
-                $message = "Asset '{$name}' was provided invalid source '{$script}'. Only '.css' files are accepted.";
-                throw new InvalidArgumentException( $message );
+        foreach ( $this->scripts as $name => $scripts ) {
+            foreach ( $scripts as $script ) {
+                if ( ! \str_ends_with( $script, '.js' ) ) {
+                    $message
+                            = "Asset '{$name}' was provided invalid source '{$script}'. Only '.css' files are accepted.";
+                    throw new InvalidArgumentException( $message );
+                }
             }
-            $assets[$name] = $script;
+            $assets[$name] = $scripts;
         }
 
         foreach ( $this->images as $image ) {
