@@ -6,6 +6,9 @@
 
 ### Dev
 /vendor
+/config
+/.project
+/.bundle
 /node_modules
 /*.cache
 /*.lock
