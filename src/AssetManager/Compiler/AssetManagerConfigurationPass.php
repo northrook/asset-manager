@@ -12,9 +12,15 @@ final class AssetManagerConfigurationPass extends CompilerPass
 
     public function compile( ContainerBuilder $container ) : void
     {
-        $this->config = new AssetConfig();
+        $this->config = new AssetConfig(
+            $this->getParameterPath( 'kernel.cache_dir' ),
+            $this->getParameterPath( 'dir.assets' ),
+            ['dir.core.assets' => $this->getParameterPath( 'dir.core.assets' )],
+        );
 
         $this->parseConfigurationFiles();
+
+        $this->config->createConfigCache();
     }
 
     private function parseConfigurationFiles() : void
