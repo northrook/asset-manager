@@ -4,6 +4,7 @@ namespace Core;
 
 use Core\AssetManager\{AssetConfig, AssetLocator, AssetReference};
 use Core\AssetManager\Interface\{AssetInterface, AssetManagerInterface};
+use Core\Asset\{Script, Type};
 use Core\Interface\PathfinderInterface;
 use Psr\Log\{LoggerInterface};
 use Psr\Cache\InvalidArgumentException;
@@ -11,6 +12,7 @@ use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\DependencyInjection\Attribute\Lazy;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Contracts\Cache\CacheInterface;
+use Throwable;
 
 #[Lazy]
 class AssetManager implements AssetManagerInterface
@@ -74,7 +76,7 @@ class AssetManager implements AssetManagerInterface
     }
 
     /**
-     * @return array<string, string|string[]>
+     * @return array<string, string[]>
      */
     private function getRegisteredAssets() : array
     {
@@ -89,16 +91,60 @@ class AssetManager implements AssetManagerInterface
         }
     }
 
+    private function resolveAsset(
+        AssetReference|string $reference,
+        ?string               $assetID = null,
+    ) : AssetInterface {
+        if ( ! $reference instanceof AssetReference ) {
+            $reference = $this->getReference( $reference );
+        }
+
+        $args = [$reference, $this->pathfinder, 'dir.public.assets', $this->storageDirectory];
+
+        $asset = match ( $reference->type ) {
+            Type::SCRIPT => new Script( ...$args ),
+
+            default => throw new \InvalidArgumentException( 'Invalid asset type: '.$reference->type ),
+        };
+
+        $asset->build( $assetID );
+
+        return $asset;
+    }
+
     public function getAsset(
-        AssetReference|string $asset,
+        AssetReference|string $reference,
         ?string               $assetID = null,
         array                 $attributes = [],
     ) : ?AssetInterface {
-        return null;
+        try {
+            $asset = $this->cache->get(
+                (string) $reference,
+                fn() : AssetInterface => $this->resolveAsset(
+                    $reference,
+                    $assetID,
+                ),
+            );
+        }
+        catch ( Throwable $e ) {
+            return null;
+        }
+
+        $asset->attributes( $attributes );
+
+        return $asset;
     }
 
-    public function getReference( string $asset ) : ?AssetReference
-    {
-        // TODO: Implement getReference() method.
+    /**
+     * @param string  $asset
+     * @param ?string $assetID
+     *
+     * @return AssetReference
+     */
+    public function getReference(
+        string  $asset,
+        ?string $assetID = null,
+    ) : AssetReference {
+        return $this->locator->getReference( $asset );
     }
 }

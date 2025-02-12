@@ -21,7 +21,8 @@
     "northrook/core": "dev-main",
     "northrook/pathfinder": "dev-main",
     "northrook/core-symfony": "dev-main",
-    "voku/portable-ascii": "^2.0"
+    "voku/portable-ascii": "^2.0",
+    "northrook/minify": "dev-main"
   },
   "require-dev": {
     "phpstan/phpstan": " @stable",

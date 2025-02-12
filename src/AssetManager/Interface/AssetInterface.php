@@ -2,4 +2,13 @@
 
 namespace Core\AssetManager\Interface;
 
-interface AssetInterface {}
+use Core\Interface\ViewInterface;
+use Core\View\Element;
+use Core\View\Element\Attributes;
+
+interface AssetInterface extends ViewInterface
+{
+    public function element() : Element;
+
+    public function attributes() : Attributes;
+}

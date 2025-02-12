@@ -166,6 +166,8 @@ enum Type
             return $string;
         }
 
+        $string = \strstr( $string, '.', true ) ?: $string;
+
         $type = Type::MAP[\trim( \strtolower( $string ), ". \n\r\t\v\0" )] ?? null;
 
         if ( ! $type ) {

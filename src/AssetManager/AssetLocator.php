@@ -9,6 +9,7 @@ use Core\AssetManager\Interface\AssetManagerInterface;
 use Core\Asset\{Image, Type};
 use Core\Pathfinder\Path;
 use Core\Interface\{PathfinderInterface, StorageInterface};
+use Psr\Cache\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Support\PhpStormMeta;
 
@@ -30,6 +31,20 @@ final readonly class AssetLocator
     ) {
         $this->manifest = new LocalStorage(
             $this->pathfinder->get( "{$storageDirectory}/asset_manifest.php" ),
+        );
+    }
+
+    public function getReference( string $reference ) : AssetReference
+    {
+        try {
+            $data = $this->manifest->get( $reference, fn() => $this->discoverAll() );
+        }
+        catch ( InvalidArgumentException $e ) {
+            throw new \InvalidArgumentException( $e->getMessage() );
+        }
+        return new AssetReference(
+            $reference,
+            $data,
         );
     }
 
@@ -82,12 +97,11 @@ final readonly class AssetLocator
     public function discoverAll() : void
     {
         foreach ( $this->registeredAssets as $reference => $asset ) {
-            $type = \strstr( $reference, '.', true ) ?: $reference;
-            match ( $type ) {
-                'images' => $this->discoverImages(),
-                'style'  => $this->discoverStyle( $asset, $reference ),
-                'script' => $this->discoverScripts( $asset, $reference ),
-                default  => null,
+            match ( Type::from( $reference ) ) {
+                Type::IMAGE  => $this->discoverImages(),
+                Type::STYLE  => $this->discoverStyle( $asset, $reference ),
+                Type::SCRIPT => $this->discoverScripts( $asset, $reference ),
+                default      => null,
             };
         }
     }

@@ -12,14 +12,14 @@ use Core\AssetManager\AssetReference;
 interface AssetManagerInterface
 {
     /**
-     * @param AssetReference|string                     $asset
+     * @param AssetReference|string                     $reference
      * @param ?string                                   $assetID
      * @param array<string, null|bool|float|int|string> $attributes
      *
      * @return null|AssetInterface
      */
     public function getAsset(
-        string|AssetReference $asset,
+        string|AssetReference $reference,
         ?string               $assetID = null,
         array                 $attributes = [],
     ) : ?AssetInterface;
@@ -27,7 +27,7 @@ interface AssetManagerInterface
     /**
      * @param string $asset
      *
-     * @return null|AssetReference
+     * @return AssetReference
      */
-    public function getReference( string $asset ) : ?AssetReference;
+    public function getReference( string $asset ) : AssetReference;
 }
