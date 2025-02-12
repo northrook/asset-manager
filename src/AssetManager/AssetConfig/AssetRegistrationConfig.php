@@ -4,7 +4,8 @@ namespace Core\AssetManager\AssetConfig;
 
 use Core\AssetManager\{AssetConfig};
 use Core\Asset\Type;
-use Core\Pathfinder;
+use Core\Interface\PathfinderInterface;
+use Core\Pathfinder\Path;
 use InvalidArgumentException;
 
 final class AssetRegistrationConfig
@@ -16,7 +17,10 @@ final class AssetRegistrationConfig
     /** @var string[] */
     public array $images = [];
 
-    public function __construct( private readonly AssetConfig $config ) {}
+    public function __construct(
+        private readonly AssetConfig         $config,
+        private readonly PathfinderInterface $pathfinder,
+    ) {}
 
     /**
      * @param string          $name
@@ -31,16 +35,15 @@ final class AssetRegistrationConfig
         $name = $this->assetName( $name, Type::STYLE );
 
         foreach ( (array) $source as $path ) {
-            $resolvePath = new Pathfinder\Path( $path );
+            $resolvePath = new Path( $path );
             if ( $resolvePath->isRelative() ) {
                 foreach ( $this->config->assetDirectories as $key ) {
-                    $this->styles[$name][$key.$path] = $this->config
-                        ->pathfinder
+                    $this->styles[$name][$key.$path] = $this->pathfinder
                         ->get( $key.$path );
                 }
             }
             else {
-                $this->styles[$name][] = $path->getRealPath();
+                $this->styles[$name][] = ( new Path( $path ) )->getRealPath();
             }
         }
 
@@ -53,11 +56,17 @@ final class AssetRegistrationConfig
     ) : self {
         $name = $this->assetName( $name, Type::SCRIPT );
 
-        $path = new Pathfinder\Path( $source );
+        if ( \str_contains( $name, '*' ) ) {
+            throw new InvalidArgumentException(
+                __METHOD__.' does not support wildcards (*).',
+            );
+        }
+
+        $path = new Path( $source );
 
         if ( $path->isRelative() ) {
             foreach ( $this->config->assetDirectories as $key ) {
-                $resolvePath                = $this->config->pathfinder->getPath( "{$key}/{$path}" );
+                $resolvePath                = $this->pathfinder->getPath( "{$key}/{$path}" );
                 $this->scripts[$name][$key] = $resolvePath->getRealPath();
             }
         }
@@ -72,13 +81,13 @@ final class AssetRegistrationConfig
         string $directoryPath,
     ) : self {
         if ( \str_starts_with( 'dir.', $directoryPath ) ) {
-            $path = $this->config->pathfinder->getPath( $directoryPath );
+            $path = $this->pathfinder->getPath( $directoryPath );
         }
         else {
-            $path = new Pathfinder\Path( $directoryPath );
+            $path = new Path( $directoryPath );
 
             if ( $path->isRelative() ) {
-                $path = $this->config->pathfinder->getPath( "dir.assets/{$path}" );
+                $path = $this->pathfinder->getPath( "dir.assets/{$path}" );
             }
         }
 

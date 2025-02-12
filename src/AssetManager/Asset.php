@@ -3,6 +3,7 @@
 namespace Core\AssetManager;
 
 use Core\Asset\Type;
+use Stringable;
 
 /**
  * @method static register( string $name, string|string[] $source )
@@ -51,4 +52,6 @@ abstract class Asset
 
         return $name;
     }
+
+    abstract public static function key( string|Stringable $from ) : string;
 }
