@@ -107,8 +107,8 @@ abstract class Asset implements AssetInterface
 
     final protected function fileName( ?string $ext = null ) : string
     {
-        $reference = explode( '.', $this->reference->name, 2);
-        $name      = end( $reference );
+        $reference = \explode( '.', $this->reference->name, 2 );
+        $name      = \end( $reference );
         $fileName  = \str_replace( '.', '-', $name );
 
         if ( $ext ) {

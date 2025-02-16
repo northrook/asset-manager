@@ -11,4 +11,6 @@ interface AssetInterface extends ViewInterface
     public function element() : Element;
 
     public function attributes() : Attributes;
+
+    public function build( ?string $assetID = null, bool $rebuild = false ) : self;
 }

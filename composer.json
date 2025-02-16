@@ -19,16 +19,13 @@
   "require": {
     "php": ">=8.3",
     "northrook/core": "dev-main",
-    "northrook/pathfinder": "dev-main",
     "northrook/core-symfony": "dev-main",
-    "voku/portable-ascii": "^2.0",
-    "northrook/minify": "dev-main"
+    "northrook/pathfinder": "dev-main",
+    "northrook/minify": "dev-main",
+    "voku/portable-ascii": "^2.0"
   },
   "require-dev": {
-    "phpstan/phpstan": " @stable",
-    "northrook/php-cs": "dev-main",
-    "jetbrains/phpstorm-attributes": "^1.2",
-    "tracy/tracy": "*",
+    "northrook/dev": "dev-main",
     "northrook/view-document": "dev-main"
   },
   "scripts": {
