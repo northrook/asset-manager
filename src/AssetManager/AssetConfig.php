@@ -18,15 +18,17 @@ class AssetConfig
 
     /**
      * @param PathfinderInterface $pathfinder
-     * @param string              $cacheDirectory
      * @param string[]            $assetDirectories
      * @param string|string[]     $configFiles
+     * @param string              $cacheDirectory        `dir.var/assets`
+     * @param string              $publicAssetsDirectory `dir.public/assets`
      */
     final public function __construct(
         PathfinderInterface    $pathfinder,
-        public readonly string $cacheDirectory,
         public readonly array  $assetDirectories,
         string|array           $configFiles,
+        public readonly string $cacheDirectory = 'dir.var/assets',
+        public readonly string $publicAssetsDirectory = 'dir.public/assets',
     ) {
         $this->register = new AssetRegistrationConfig( $this, $pathfinder );
 

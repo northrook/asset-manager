@@ -2,7 +2,7 @@
 
 namespace Core;
 
-use Core\AssetManager\{AssetLocator, AssetReference};
+use Core\AssetManager\{AssetConfig, AssetLocator, AssetReference};
 use Core\AssetManager\Interface\{AssetInterface, AssetManagerInterface, AssetServiceInterface};
 use Core\Exception\NotImplementedException;
 use Core\Interface\PathfinderInterface;
@@ -11,59 +11,31 @@ use Psr\Cache\CacheItemPoolInterface;
 use Core\Asset\{Script, Type};
 use Psr\Log\{LoggerInterface};
 use Support\Minify\JavaScriptMinifier;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\DependencyInjection\Attribute\Lazy;
 use Symfony\Component\DependencyInjection\ServiceLocator;
-use Symfony\Contracts\Cache\CacheInterface;
 use Throwable;
 use InvalidArgumentException;
 
 #[Lazy]
 class AssetManager implements AssetManagerInterface
 {
-    public const string REGISTERED_CACHE_KEY = 'asset_manager.registered_assets';
-
     public readonly AssetLocator $locator;
 
-    protected readonly CacheInterface $cache;
-
-    /** @var string[] */
-    protected array $assetConfig;
-
-    /** @var string[] */
-    protected array $assetDirectories;
-
     /**
-     * @param string|string[]                        $assetConfig
-     * @param string|string[]                        $assetDirectories
-     * @param string                                 $storageDirectory
+     * @param AssetConfig                            $config
      * @param PathfinderInterface                    $pathfinder
      * @param ?ServiceLocator<AssetServiceInterface> $serviceLocator
-     * @param null|CacheInterface                    $cache
-     * @param ?CacheItemPoolInterface                $compilerCache
+     * @param ?CacheItemPoolInterface                $cache
      * @param null|LoggerInterface                   $logger
-     * @param string                                 $publicRootKey
      */
     final public function __construct(
-        string|array                               $assetConfig,
-        string|array                               $assetDirectories,
-        protected string                           $storageDirectory,
+        public readonly AssetConfig                $config,
         protected readonly PathfinderInterface     $pathfinder,
         protected readonly ?ServiceLocator         $serviceLocator = null,
-        ?CacheInterface                            $cache = null,
-        protected readonly ?CacheItemPoolInterface $compilerCache = null,
+        protected readonly ?CacheItemPoolInterface $cache = null,
         protected readonly ?LoggerInterface        $logger = null,
-        protected readonly string                  $publicRootKey = 'dir.public.assets',
     ) {
-        $this->assetConfig      = (array) $assetConfig;
-        $this->assetDirectories = (array) $assetDirectories;
-        $this->cache            = $cache ?? new ArrayAdapter();
-        // $this->locator          = new AssetLocator(
-        //     $this->getRegisteredAssets(),
-        //     $this->storageDirectory,
-        //     $this->pathfinder,
-        //     $this->logger,
-        // );
+        dump( $this );
     }
 
     final protected function resolveJavaScript( AssetReference $referencece ) : Script
@@ -71,11 +43,11 @@ class AssetManager implements AssetManagerInterface
         $script = new Script(
             $referencece,
             $this->pathfinder,
-            $this->publicRootKey,
+            $this->config->publicAssetsDirectory,
         );
 
         $script->setMinifier(
-            new JavaScriptMinifier( $this->compilerCache, $this->logger ),
+            new JavaScriptMinifier( $this->cache, $this->logger ),
         );
 
         return $script;

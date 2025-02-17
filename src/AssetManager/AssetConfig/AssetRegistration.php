@@ -3,6 +3,7 @@
 namespace Core\AssetManager\AssetConfig;
 
 use Core\Asset\Type;
+use Core\Interface\DataInterface;
 use Core\Pathfinder\Path;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
 use const Support\AUTO;
@@ -11,7 +12,7 @@ use InvalidArgumentException;
 /**
  * @internal
  */
-final class AssetRegistration
+final class AssetRegistration implements DataInterface
 {
     /** @var string `type.name` */
     public readonly string $name;
@@ -96,8 +97,6 @@ final class AssetRegistration
             Type::IMAGE => $path->getExtension(),
             default     => $this->type !== Type::from( $path->getExtension() ),
         };
-
-
 
         // \assert( $path instanceof Path );
         //
