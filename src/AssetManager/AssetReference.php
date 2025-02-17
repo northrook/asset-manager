@@ -18,18 +18,23 @@ final readonly class AssetReference extends DataObject implements Stringable
     /** @var string[] */
     public array $source;
 
+    /** @var string[] */
+    public array $servicePass;
+
     /**
      * @param string          $name
      * @param string|string[] $sources
-     * @param Type            $type
+     * @param string|string[] $servicePass
      */
     public function __construct(
-        string $name,
-        array  $sources,
+        string       $name,
+        string|array $sources,
+        string|array $servicePass = [],
     ) {
         $sources = (array) $sources;
         \ksort( $sources );
-        $this->source = $sources;
+        $this->source      = $sources;
+        $this->servicePass = (array) $servicePass;
         \assert(
             \ctype_alpha( \str_replace( ['.', '-'], '', $name ) ),
             "Asset names must only contain ASCII characters, underscores and dashes. {$name} provided.",

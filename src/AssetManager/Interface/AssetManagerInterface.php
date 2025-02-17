@@ -24,10 +24,10 @@ interface AssetManagerInterface
         array                 $attributes = [],
     ) : ?AssetInterface;
 
-    /**
-     * @param string $asset
-     *
-     * @return AssetReference
-     */
-    public function getReference( string $asset ) : AssetReference;
+    // /**
+    //  * @param string $asset
+    //  *
+    //  * @return AssetReference
+    //  */
+    // public function getReference( string $asset ) : AssetReference;
 }

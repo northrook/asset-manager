@@ -139,9 +139,10 @@ enum Type
     case ICON;
 
     /**
-     * @return string[]
+     * @return ($string is true ? string : string[])
+     * @param  bool                                  $string
      */
-    public function extensions() : array
+    public function extensions( bool $string = false ) : array|string
     {
         $extensions = [];
 
@@ -149,6 +150,10 @@ enum Type
             if ( $type === $this ) {
                 $extensions[] = $extension;
             }
+        }
+
+        if ( $string ) {
+            return \implode( ', ', $extensions );
         }
 
         return $extensions;

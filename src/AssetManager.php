@@ -2,12 +2,12 @@
 
 namespace Core;
 
-use Core\AssetManager\{AssetConfig, AssetLocator, AssetReference};
+use Core\AssetManager\{AssetLocator, AssetReference};
 use Core\AssetManager\Interface\{AssetInterface, AssetManagerInterface, AssetServiceInterface};
 use Core\Exception\NotImplementedException;
 use Core\Interface\PathfinderInterface;
 use Core\View\Element\Attributes;
-use Psr\Cache\{CacheItemPoolInterface, InvalidArgumentException};
+use Psr\Cache\CacheItemPoolInterface;
 use Core\Asset\{Script, Type};
 use Psr\Log\{LoggerInterface};
 use Support\Minify\JavaScriptMinifier;
@@ -16,6 +16,7 @@ use Symfony\Component\DependencyInjection\Attribute\Lazy;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Contracts\Cache\CacheInterface;
 use Throwable;
+use InvalidArgumentException;
 
 #[Lazy]
 class AssetManager implements AssetManagerInterface
@@ -57,45 +58,12 @@ class AssetManager implements AssetManagerInterface
         $this->assetConfig      = (array) $assetConfig;
         $this->assetDirectories = (array) $assetDirectories;
         $this->cache            = $cache ?? new ArrayAdapter();
-        $this->locator          = new AssetLocator(
-            $this->getRegisteredAssets(),
-            $this->storageDirectory,
-            $this->pathfinder,
-            $this->logger,
-        );
-    }
-
-    private function getAssetConfig() : AssetConfig
-    {
-        $config = new AssetConfig(
-            $this->assetDirectories,
-            $this->pathfinder,
-        );
-
-        foreach ( $this->assetConfig as $configPath ) {
-            $path = $this->pathfinder->getPath( $configPath );
-
-            if ( $path->exists() ) {
-                ( require $path->getRealPath() )( $config );
-            }
-        }
-        return $config;
-    }
-
-    /**
-     * @return array<string, string[]>
-     */
-    private function getRegisteredAssets() : array
-    {
-        try {
-            return $this->cache->get(
-                $this::REGISTERED_CACHE_KEY,
-                fn() => $this->getAssetConfig()->register->resolve(),
-            );
-        }
-        catch ( InvalidArgumentException $e ) {
-            throw new \InvalidArgumentException( $e->getMessage() );
-        }
+        // $this->locator          = new AssetLocator(
+        //     $this->getRegisteredAssets(),
+        //     $this->storageDirectory,
+        //     $this->pathfinder,
+        //     $this->logger,
+        // );
     }
 
     final protected function resolveJavaScript( AssetReference $referencece ) : Script
@@ -104,7 +72,6 @@ class AssetManager implements AssetManagerInterface
             $referencece,
             $this->pathfinder,
             $this->publicRootKey,
-            $this->storageDirectory,
         );
 
         $script->setMinifier(
@@ -125,7 +92,7 @@ class AssetManager implements AssetManagerInterface
         $asset = match ( $reference->type ) {
             Type::SCRIPT => $this->resolveJavaScript( $reference ),
 
-            default => throw new \InvalidArgumentException( 'Invalid asset type: '.$reference->type->name ),
+            default => throw new InvalidArgumentException( 'Invalid asset type: '.$reference->type->name ),
         };
 
         if ( $this->serviceLocator?->has( $reference->name ) ) {

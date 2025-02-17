@@ -7,54 +7,73 @@ use Core\Asset\Type;
 use Core\Interface\PathfinderInterface;
 use Core\Pathfinder\Path;
 use InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
+use function Support\isRelativePath;
 
 final class AssetRegistrationConfig
 {
-    public array $styles = [];
-
-    public array $scripts = [];
-
-    /** @var string[] */
-    public array $images = [];
+    /** @var array<string, AssetRegistration> */
+    public array $assets = [];
 
     public function __construct(
         private readonly AssetConfig         $config,
         private readonly PathfinderInterface $pathfinder,
     ) {}
 
+    public function getRegistration( string $name ) : AssetRegistration
+    {
+        return $this->assets[$name] ?? $this->assets[$name] = new AssetRegistration( $name );
+    }
+
     /**
-     * @param string          $name
-     * @param string|string[] $source
+     * @param string                                                              $name
+     * @param string|string[]                                                     $source
+     * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
      *
      * @return $this
      */
     public function style(
-        string       $name,
-        string|array $source,
+        string                             $name,
+        string|array                       $source = [],
+        string|array|ReferenceConfigurator $service = [],
     ) : self {
-        $name = $this->assetName( $name, Type::STYLE );
+        $name  = $this->assetName( $name, Type::STYLE );
+        $asset = $this->getRegistration( $name );
 
+        /** @var string $path */
         foreach ( (array) $source as $path ) {
-            $resolvePath = new Path( $path );
-            if ( $resolvePath->isRelative() ) {
+            if ( isRelativePath( $path ) ) {
                 foreach ( $this->config->assetDirectories as $key ) {
-                    $this->styles[$name][$key.$path] = $this->pathfinder
-                        ->get( $key.$path );
+                    $asset->addSource(
+                        $this->pathfinder->get( $key.$path ),
+                        $key.$path,
+                    );
                 }
             }
             else {
-                $this->styles[$name][] = ( new Path( $path ) )->getRealPath();
+                $asset->addSource( new Path( $path ) );
             }
         }
+
+        $asset->addService( $service );
 
         return $this;
     }
 
+    /**
+     * @param string                                                              $name
+     * @param string                                                              $source
+     * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
+     *
+     * @return $this
+     */
     public function script(
-        string $name,
-        string $source,
+        string                             $name,
+        string                             $source,
+        string|array|ReferenceConfigurator $service = [],
     ) : self {
-        $name = $this->assetName( $name, Type::SCRIPT );
+        $name  = $this->assetName( $name, Type::SCRIPT );
+        $asset = $this->getRegistration( $name );
 
         if ( \str_contains( $name, '*' ) ) {
             throw new InvalidArgumentException(
@@ -66,76 +85,45 @@ final class AssetRegistrationConfig
 
         if ( $path->isRelative() ) {
             foreach ( $this->config->assetDirectories as $key ) {
-                $resolvePath                = $this->pathfinder->getPath( "{$key}/{$path}" );
-                $this->scripts[$name][$key] = $resolvePath->getRealPath();
+                $asset->addSource(
+                    $this->pathfinder->getPath( "{$key}/{$path}" ),
+                    $key,
+                );
             }
         }
         else {
-            $this->scripts[$name][] = $path->getRealPath();
+            $asset->addSource( $path );
         }
+
+        $asset->addService( $service );
 
         return $this;
     }
 
+    /**
+     * @param string                                                              $name
+     * @param string                                                              $directoryPath
+     * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
+     *
+     * @return $this
+     */
     public function imageDirectory(
-        string $directoryPath,
+        string                             $name,
+        string                             $directoryPath,
+        string|array|ReferenceConfigurator $service = [],
     ) : self {
-        if ( \str_starts_with( 'dir.', $directoryPath ) ) {
-            $path = $this->pathfinder->getPath( $directoryPath );
-        }
-        else {
-            $path = new Path( $directoryPath );
+        $name  = $this->assetName( $name, Type::IMAGE );
+        $asset = $this->getRegistration( $name );
 
-            if ( $path->isRelative() ) {
-                $path = $this->pathfinder->getPath( "dir.assets/{$path}" );
-            }
-        }
+        $path = match ( true ) {
+            isRelativePath( $directoryPath ) => $this->pathfinder->getPath( "dir.assets/{$directoryPath}" ),
+            default                          => $this->pathfinder->getPath( $directoryPath ),
+        };
 
-        if ( $path->getExtension() ) {
-            $message = 'Only directories are accepted.';
-            throw new InvalidArgumentException( $message );
-        }
-
-        if ( ! $path->exists() ) {
-            \mkdir( $path->getRealPath(), 0777, true );
-        }
-
-        $this->images[] = $path->getRealPath();
+        $asset->addSource( $path );
+        $asset->addService( $service );
 
         return $this;
-    }
-
-    public function resolve() : array
-    {
-        $assets = [];
-
-        foreach ( $this->styles as $name => $styles ) {
-            foreach ( $styles as $style ) {
-                if ( ! \str_ends_with( $style, '.css' ) ) {
-                    $message
-                            = "Asset '{$name}' was provided invalid source '{$style}'. Only '.css' files are accepted.";
-                    throw new InvalidArgumentException( $message );
-                }
-            }
-            $assets[$name] = $styles;
-        }
-
-        foreach ( $this->scripts as $name => $scripts ) {
-            foreach ( $scripts as $script ) {
-                if ( ! \str_ends_with( $script, '.js' ) ) {
-                    $message
-                            = "Asset '{$name}' was provided invalid source '{$script}'. Only '.css' files are accepted.";
-                    throw new InvalidArgumentException( $message );
-                }
-            }
-            $assets[$name] = $scripts;
-        }
-
-        foreach ( $this->images as $image ) {
-            $assets['images'][] = $image;
-        }
-
-        return $assets;
     }
 
     private function assetName( string $name, Type $type ) : string

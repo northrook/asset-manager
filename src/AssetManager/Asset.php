@@ -26,7 +26,6 @@ abstract class Asset implements AssetInterface
         protected readonly AssetReference      $reference,
         protected readonly PathfinderInterface $pathfinder,
         protected readonly string              $publicRootKey,
-        protected readonly string              $storageDirectory,
     ) {}
 
     abstract protected function construct( bool $rebuild ) : void;

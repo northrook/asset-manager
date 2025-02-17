@@ -2,9 +2,13 @@ parameters:
 	level: 9
 	paths:
 		- src
+	tmpDir: .ide
 	treatPhpDocTypesAsCertain: false
 	reportUnmatchedIgnoredErrors: false
 	ignoreErrors:
+		-
+			message: '#Call to an undefined method Core\\Pathfinder\\Path.+#'
+			path: *.php
 		-
 			message: '#Expression on left side of \?\? is always null.#'
 			path: *.php
