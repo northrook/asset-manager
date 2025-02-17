@@ -1,6 +1,8 @@
 <?php
 
-namespace Core\AssetManager\AssetConfig;
+declare(strict_types=1);
+
+namespace Core\AssetManager\Config;
 
 use Core\Asset\Type;
 use Core\Interface\DataInterface;

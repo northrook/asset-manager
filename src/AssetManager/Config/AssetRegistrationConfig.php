@@ -1,8 +1,10 @@
 <?php
 
-namespace Core\AssetManager\AssetConfig;
+declare(strict_types=1);
 
-use Core\AssetManager\{AssetConfig};
+namespace Core\AssetManager\Config;
+
+use Core\AssetManager\AssetConfig;
 use Core\Asset\Type;
 use Core\Interface\PathfinderInterface;
 use Core\Pathfinder\Path;
@@ -10,6 +12,10 @@ use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
 use function Support\isRelativePath;
 
+/**
+ * @internal
+ * @author Martin Nielsen <mn@northrook.com>
+ */
 final class AssetRegistrationConfig
 {
     /** @var array<string, AssetRegistration> */

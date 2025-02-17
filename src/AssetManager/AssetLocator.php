@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Core\AssetManager;
 
 use Cache\LocalStorage;
+use Core\AssetManager\Config\AssetReference;
 use Core\AssetManager\Interface\AssetManagerInterface;
 use Core\Asset\{Image, Type};
 use Core\Pathfinder\Path;

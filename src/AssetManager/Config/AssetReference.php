@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Core\AssetManager;
+namespace Core\AssetManager\Config;
 
 use Core\Asset\Type;
 use Core\Interface\DataObject;

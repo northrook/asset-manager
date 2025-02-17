@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Core\AssetManager\Interface;
 
-use Core\AssetManager\AssetReference;
+use Core\AssetManager\Config\AssetReference;
 
 /**
  * @author Martin Nielsen <mn@northrook.com>

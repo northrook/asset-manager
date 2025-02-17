@@ -1,8 +1,16 @@
 <?php
 
+/**
+ * The {@see AssetManager} should ideally be a {@see Lazy} service.
+ *
+ * @noinspection PhpClassCanBeReadonlyInspection
+ */
+
+declare(strict_types=1);
+
 namespace Core;
 
-use Core\AssetManager\{AssetConfig, AssetLocator, AssetReference};
+use Core\AssetManager\{AssetConfig, AssetLocator, Config\AssetReference};
 use Core\AssetManager\Interface\{AssetInterface, AssetManagerInterface, AssetServiceInterface};
 use Core\Exception\NotImplementedException;
 use Core\Interface\PathfinderInterface;
@@ -95,7 +103,7 @@ class AssetManager implements AssetManagerInterface
         array|Attributes      $attributes = [],
     ) : ?AssetInterface {
         try {
-            $asset = $this->cache->get(
+            $asset = $this->cache?->get(
                 (string) $reference,
                 fn() : AssetInterface => $this->resolveAsset(
                     $reference,
@@ -103,7 +111,7 @@ class AssetManager implements AssetManagerInterface
                 ),
             );
         }
-        catch ( Throwable $e ) {
+        catch ( Throwable ) {
             return null;
         }
 

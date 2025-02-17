@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Core\AssetManager;
 
-use Core\AssetManager\AssetConfig\AssetRegistrationConfig;
 use Core\Interface\PathfinderInterface;
+use Core\AssetManager\Config\{AssetReference, AssetRegistrationConfig};
 use Symfony\Component\DependencyInjection\Attribute\Lazy;
 
 #[Lazy]

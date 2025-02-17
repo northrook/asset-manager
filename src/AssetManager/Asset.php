@@ -3,6 +3,7 @@
 namespace Core\AssetManager;
 
 use Core\Asset\Type;
+use Core\AssetManager\Config\AssetReference;
 use Core\AssetManager\Interface\AssetInterface;
 use Core\Interface\PathfinderInterface;
 use Core\View\Element;
