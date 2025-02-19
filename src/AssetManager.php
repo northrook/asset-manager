@@ -13,7 +13,6 @@ namespace Core;
 use Core\AssetManager\{AssetConfig, AssetLocator, Config\AssetReference};
 use Core\AssetManager\Interface\{AssetInterface, AssetManagerInterface, AssetServiceInterface};
 use Core\Exception\NotImplementedException;
-use Core\Interface\PathfinderInterface;
 use Core\View\Element\Attributes;
 use Psr\Cache\CacheItemPoolInterface;
 use Core\Asset\{Script, Type};
@@ -31,14 +30,14 @@ class AssetManager implements AssetManagerInterface
 
     /**
      * @param AssetConfig                            $config
-     * @param PathfinderInterface                    $pathfinder
+     * @param Pathfinder                             $pathfinder
      * @param ?ServiceLocator<AssetServiceInterface> $serviceLocator
      * @param ?CacheItemPoolInterface                $cache
      * @param null|LoggerInterface                   $logger
      */
     final public function __construct(
         public readonly AssetConfig                $config,
-        protected readonly PathfinderInterface     $pathfinder,
+        protected readonly Pathfinder              $pathfinder,
         protected readonly ?ServiceLocator         $serviceLocator = null,
         protected readonly ?CacheItemPoolInterface $cache = null,
         protected readonly ?LoggerInterface        $logger = null,

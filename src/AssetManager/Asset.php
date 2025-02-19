@@ -5,7 +5,7 @@ namespace Core\AssetManager;
 use Core\Asset\Type;
 use Core\AssetManager\Config\AssetReference;
 use Core\AssetManager\Interface\AssetInterface;
-use Core\Interface\PathfinderInterface;
+use Core\Pathfinder;
 use Core\View\Element;
 use Core\View\Element\Attributes;
 use Stringable;
@@ -24,9 +24,9 @@ abstract class Asset implements AssetInterface
     protected ?Element $element = null;
 
     public function __construct(
-        protected readonly AssetReference      $reference,
-        protected readonly PathfinderInterface $pathfinder,
-        protected readonly string              $publicRootKey,
+        protected readonly AssetReference $reference,
+        protected readonly Pathfinder     $pathfinder,
+        protected readonly string         $publicRootKey,
     ) {}
 
     abstract protected function construct( bool $rebuild ) : void;

@@ -7,45 +7,45 @@ namespace Core\AssetManager;
 use Cache\LocalStorage;
 use Core\AssetManager\Config\AssetReference;
 use Core\AssetManager\Interface\AssetManagerInterface;
+use Core\Pathfinder;
 use Core\Asset\{Image, Type};
 use Core\Pathfinder\Path;
-use Core\Interface\{PathfinderInterface, StorageInterface};
 use Psr\Cache\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Support\PhpStormMeta;
 
 final readonly class AssetLocator
 {
-    public StorageInterface $manifest;
+    // public StorageInterface $manifest;
 
     /**
      * @param array<string, string[]> $registeredAssets
      * @param string                  $storageDirectory
-     * @param PathfinderInterface     $pathfinder
+     * @param Pathfinder              $pathfinder
      * @param null|LoggerInterface    $logger
      */
     public function __construct(
         private array               $registeredAssets,
         string                      $storageDirectory,
-        private PathfinderInterface $pathfinder,
+        private Pathfinder $pathfinder,
         private ?LoggerInterface    $logger = null,
     ) {
-        $this->manifest = new LocalStorage(
-            $this->pathfinder->get( "{$storageDirectory}/asset_manifest.php" ),
-        );
+        // $this->manifest = new LocalStorage(
+        //     $this->pathfinder->get( "{$storageDirectory}/asset_manifest.php" ),
+        // );
     }
 
     public function getReference( string $reference ) : AssetReference
     {
-        try {
-            $data = $this->manifest->get( $reference, fn() => $this->discoverAll() );
-        }
-        catch ( InvalidArgumentException $e ) {
-            throw new \InvalidArgumentException( $e->getMessage() );
-        }
+        // try {
+        //     $data = $this->manifest->get( $reference, fn() => $this->discoverAll() );
+        // }
+        // catch ( InvalidArgumentException $e ) {
+        //     throw new \InvalidArgumentException( $e->getMessage() );
+        // }
         return new AssetReference(
             $reference,
-            $data,
+            '$data',
         );
     }
 
@@ -63,7 +63,7 @@ final readonly class AssetLocator
 
         $meta->registerArgumentsSet(
             'asset_reference_keys',
-            ...$this->manifest->getKeys(),
+            // ...$this->manifest->getKeys(),
         );
 
         $generateReferences = \array_merge(
@@ -126,18 +126,18 @@ final readonly class AssetLocator
             }
         }
 
-        $this->manifest->set(
-            $reference,
-            $styles,
-        );
+        // $this->manifest->set(
+        //     $reference,
+        //     $styles,
+        // );
     }
 
     private function discoverScripts( array $source, string $reference ) : void
     {
-        $this->manifest->set(
-            $reference,
-            $source,
-        );
+        // $this->manifest->set(
+        //     $reference,
+        //     $source,
+        // );
     }
 
     private function scanImageDirectory( Path $directory, string $relativeTo ) : void
@@ -167,10 +167,10 @@ final readonly class AssetLocator
 
             $string = $this->pathfinder->get( $path, $relativeTo );
 
-            $this->manifest->set(
-                Image::key( $string ),
-                $path->getRealPath(),
-            );
+            // $this->manifest->set(
+            //     Image::key( $string ),
+            //     $path->getRealPath(),
+            // );
         }
     }
 }

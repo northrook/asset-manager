@@ -6,7 +6,7 @@ namespace Core\AssetManager\Config;
 
 use Core\AssetManager\AssetConfig;
 use Core\Asset\Type;
-use Core\Interface\PathfinderInterface;
+use Core\Pathfinder;
 use Core\Pathfinder\Path;
 use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
@@ -22,8 +22,8 @@ final class AssetRegistrationConfig
     public array $assets = [];
 
     public function __construct(
-        private readonly AssetConfig         $config,
-        private readonly PathfinderInterface $pathfinder,
+        private readonly AssetConfig $config,
+        private readonly Pathfinder  $pathfinder,
     ) {}
 
     public function getRegistration( string $name ) : AssetRegistration

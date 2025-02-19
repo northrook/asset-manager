@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Core\AssetManager;
 
-use Core\Interface\PathfinderInterface;
 use Core\AssetManager\Config\{AssetReference, AssetRegistrationConfig};
+use Core\Pathfinder;
 use Symfony\Component\DependencyInjection\Attribute\Lazy;
 
 #[Lazy]
@@ -17,14 +17,14 @@ class AssetConfig
     private array $resolved;
 
     /**
-     * @param PathfinderInterface $pathfinder
-     * @param string[]            $assetDirectories
-     * @param string|string[]     $configFiles
-     * @param string              $cacheDirectory        `dir.var/assets`
-     * @param string              $publicAssetsDirectory `dir.public/assets`
+     * @param Pathfinder      $pathfinder
+     * @param string[]        $assetDirectories
+     * @param string|string[] $configFiles
+     * @param string          $cacheDirectory        `dir.var/assets`
+     * @param string          $publicAssetsDirectory `dir.public/assets`
      */
     final public function __construct(
-        PathfinderInterface    $pathfinder,
+        Pathfinder             $pathfinder,
         public readonly array  $assetDirectories,
         string|array           $configFiles,
         public readonly string $cacheDirectory = 'dir.var/assets',
