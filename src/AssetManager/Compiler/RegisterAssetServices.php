@@ -30,7 +30,7 @@ final class RegisterAssetServices extends CompilerPass
 
         foreach ( $container->findTaggedServiceIds( $this::ID ) as $id => $unused ) {
             $taggedService = $container->getDefinition( $id );
-            $serviceId     = $taggedService->innerServiceId ?? $taggedService->getClass();
+            $serviceId     = $taggedService->innerServiceId ?? $id;
             if ( $serviceId ) {
                 $serviceLocatorArguments[$id] = new Reference( $serviceId );
             }

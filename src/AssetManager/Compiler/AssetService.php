@@ -37,13 +37,14 @@ final class AssetService extends Autodiscover
         $this->type = $type ?? Type::from( $name, true );
 
         parent::__construct(
-            tag      : [
-                'asset.service_locator',
+            serviceID : $this->name,
+            tag       : [
+                RegisterAssetServices::ID,
                 'monolog.logger' => ['channel' => 'assets'],
             ],
-            lazy     : false,
-            public   : false,
-            autowire : true,
+            lazy      : false,
+            public    : false,
+            autowire  : true,
         );
     }
 }
