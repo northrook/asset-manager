@@ -107,18 +107,16 @@ final class AssetRegistrationConfig
     }
 
     /**
-     * @param string                                                              $name
      * @param string                                                              $directoryPath
      * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
      *
      * @return $this
      */
     public function imageDirectory(
-        string                             $name,
         string                             $directoryPath,
         string|array|ReferenceConfigurator $service = [],
     ) : self {
-        $name  = $this->assetName( $name, Type::IMAGE );
+        $name  = $this->nameFromPath( $directoryPath, Type::IMAGE );
         $asset = $this->getRegistration( $name );
 
         $path = match ( true ) {
@@ -130,6 +128,14 @@ final class AssetRegistrationConfig
         $asset->addService( $service );
 
         return $this;
+    }
+
+    private function nameFromPath( string $path, Type $type ) : string
+    {
+        $name = $this->pathfinder->get( $path, 'dir.root' );
+        $name = (string) \preg_replace( '/[^a-z0-9.]+/i', '.', $name );
+
+        return $this->assetName( $name, $type );
     }
 
     private function assetName( string $name, Type $type ) : string

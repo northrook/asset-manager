@@ -5,40 +5,46 @@ declare(strict_types=1);
 namespace Core\AssetManager;
 
 use Core\AssetManager\Config\{AssetReference, AssetRegistrationConfig};
+use Core\Exception\MissingReferenceException;
 use Core\Pathfinder;
-use Symfony\Component\DependencyInjection\Attribute\Lazy;
+use InvalidArgumentException;
 
-#[Lazy]
+// #[Lazy]
 class AssetConfig
 {
     public readonly AssetRegistrationConfig $register;
+
+    /** @var string[] */
+    public readonly array $assetDirectories;
 
     /** @var array<string, AssetReference> */
     private array $resolved;
 
     /**
      * @param Pathfinder      $pathfinder
-     * @param string[]        $assetDirectories
+     * @param string|string[] $assetDirectories
      * @param string|string[] $configFiles
      * @param string          $cacheDirectory        `dir.var/assets`
      * @param string          $publicAssetsDirectory `dir.public/assets`
      */
     final public function __construct(
-        Pathfinder             $pathfinder,
-        public readonly array  $assetDirectories,
+        protected Pathfinder   $pathfinder,
+        string|array           $assetDirectories,
         string|array           $configFiles,
         public readonly string $cacheDirectory = 'dir.var/assets',
         public readonly string $publicAssetsDirectory = 'dir.public/assets',
     ) {
         $this->register = new AssetRegistrationConfig( $this, $pathfinder );
+        $this->assetDirectories( (array) $assetDirectories );
+        $this->parseConfiguration( (array) $configFiles );
+    }
 
-        foreach ( (array) $configFiles as $configPath ) {
-            $path = $pathfinder->getPath( $configPath );
-
-            if ( $path->exists() ) {
-                ( require $path->getRealPath() )( $this );
-            }
-        }
+    final public function getReference( string $reference ) : AssetReference
+    {
+        return $this->resolve()[$reference] ?? throw new MissingReferenceException(
+            $reference,
+            \array_keys( $this->resolve() ),
+        );
     }
 
     /**
@@ -65,5 +71,38 @@ class AssetConfig
         }
 
         return $this->resolved = $assets;
+    }
+
+    /**
+     * @param string[] $assetDirectories
+     *
+     * @return void
+     */
+    private function assetDirectories( array $assetDirectories ) : void
+    {
+        foreach ( $assetDirectories as $assetDirectory ) {
+            if ( ! $this->pathfinder->get( $assetDirectory ) ) {
+                $message = "AssetConfig: directory '{$assetDirectory}' does not exist.";
+                throw new InvalidArgumentException( $message );
+            }
+        }
+
+        $this->assetDirectories = $assetDirectories;
+    }
+
+    /**
+     * @param string[] $configFile
+     *
+     * @return void
+     */
+    private function parseConfiguration( array $configFile ) : void
+    {
+        foreach ( $configFile as $path ) {
+            $config = $this->pathfinder->get( $path );
+
+            if ( \file_exists( $config ) ) {
+                ( require $config )( $this );
+            }
+        }
     }
 }
