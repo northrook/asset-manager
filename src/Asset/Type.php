@@ -11,7 +11,7 @@ use ReflectionException;
 enum Type
 {
     private const array MAP = [
-        // Core AssetAttribute Types
+        // Core AssetService Types
         'css'   => self::STYLE,
         'scss'  => self::STYLE,
         'js'    => self::SCRIPT,
@@ -33,7 +33,7 @@ enum Type
         'ttf'   => self::FONT,
         'otf'   => self::FONT,
 
-        // Document AssetAttribute Types
+        // Document AssetService Types
         'doc'  => self::DOCUMENT,
         'docx' => self::DOCUMENT,
         'pdf'  => self::DOCUMENT,
@@ -50,20 +50,20 @@ enum Type
         'ppt'  => self::PRESENTATION,
         'pptx' => self::PRESENTATION,
 
-        // Archive AssetAttribute Types
+        // Archive AssetService Types
         'zip' => self::ARCHIVE,
         'rar' => self::ARCHIVE,
         'tar' => self::ARCHIVE,
         'gz'  => self::ARCHIVE,
 
-        // Executable AssetAttribute Types
+        // Executable AssetService Types
         'exe' => self::EXECUTABLE,
         'bat' => self::EXECUTABLE,
         'sh'  => self::EXECUTABLE,
         'deb' => self::PACKAGE,
         'rpm' => self::PACKAGE,
 
-        // Code AssetAttribute Types
+        // Code AssetService Types
         'php'   => self::SOURCE,
         'html'  => self::SOURCE,
         'py'    => self::SOURCE,
@@ -76,7 +76,7 @@ enum Type
         'view'  => self::TEMPLATE,
         'blade' => self::TEMPLATE,
 
-        // Design and Media AssetAttribute Types
+        // Design and Media AssetService Types
         'obj'    => self::MODEL,
         'psd'    => self::DESIGN,
         'sketch' => self::DESIGN,
@@ -97,7 +97,7 @@ enum Type
 
     case ABSTRACT;
 
-    // Core AssetAttribute Types
+    // Core AssetService Types
     case STYLE;
     case SCRIPT;
     case IMAGE;
@@ -105,33 +105,33 @@ enum Type
     case AUDIO;
     case FONT;
 
-    // Document AssetAttribute Types
+    // Document AssetService Types
     case DOCUMENT;
     case DATA;
     case TEXT;
     case SPREADSHEET;
     case PRESENTATION;
 
-    // Archive AssetAttribute Types
+    // Archive AssetService Types
     case ARCHIVE;
 
-    // Executable AssetAttribute Types
+    // Executable AssetService Types
     case EXECUTABLE;
     case PACKAGE;
 
-    // Code AssetAttribute Types
+    // Code AssetService Types
     case SOURCE;
     case CONFIG;
     case TEMPLATE;
 
-    // Design and Media AssetAttribute Types
+    // Design and Media AssetService Types
     case MODEL;
     case DESIGN;
     case VECTOR;
     case LAYOUT;
     case TEXTURE;
 
-    // Miscellaneous AssetAttribute Types
+    // Miscellaneous AssetService Types
     case LOG;
     case BACKUP;
     case CERTIFICATE;

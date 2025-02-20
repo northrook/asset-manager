@@ -7,6 +7,7 @@ namespace Core\AssetManager\Compiler;
 use Core\Asset\Type;
 use Core\Symfony\DependencyInjection\Autodiscover;
 use InvalidArgumentException;
+use Attribute;
 
 /**
  * If provided a `name`, it will match against registered assets by name.
@@ -14,7 +15,8 @@ use InvalidArgumentException;
  *
  * Asset names must resolve to a valid asset and type.
  */
-final class AssetAttribute extends Autodiscover
+#[Attribute( Attribute::TARGET_CLASS )]
+final class AssetService extends Autodiscover
 {
     /** @var ?string `type.name` */
     public ?string $name;

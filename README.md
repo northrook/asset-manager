@@ -1,4 +1,4 @@
-# AssetAttribute Manager
+# AssetService Manager
 
 > [!CAUTION]
 > Do not use
