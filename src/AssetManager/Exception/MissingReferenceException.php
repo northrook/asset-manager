@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Core\Exception;
+namespace Core\AssetManager\Exception;
 
 use Core\AssetManager\Config\AssetReference;
 use InvalidArgumentException;
@@ -20,7 +20,7 @@ final class MissingReferenceException extends InvalidArgumentException
         array                 $references,
         ?Throwable            $previous = null,
     ) {
-        $message = 'AssetReference '.(string) $reference.' not found.';
+        $message = "AssetReference {$reference} not found.";
         $message .= "\n\n".'Available references: '.\implode( ', ', $references );
 
         parent::__construct( $message, 404, $previous );

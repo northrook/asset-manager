@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Core\AssetManager;
 
 use Core\AssetManager\Config\{AssetReference, AssetRegistrationConfig};
-use Core\Exception\MissingReferenceException;
+use Core\AssetManager\Exception\MissingReferenceException;
 use Core\Pathfinder;
 use InvalidArgumentException;
 
