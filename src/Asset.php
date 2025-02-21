@@ -85,6 +85,19 @@ abstract class Asset implements AssetInterface
         return $this->element()->getHtml();
     }
 
+    final protected function fileName( ?string $ext = null ) : string
+    {
+        $reference = \explode( '.', $this->reference->name, 2 );
+        $name      = \end( $reference );
+        $fileName  = \str_replace( '.', '-', $name );
+
+        if ( $ext ) {
+            $fileName .= '.'.\trim( $ext, '.' );
+        }
+
+        return $fileName;
+    }
+
     /**
      * @param null|string $assetID
      *

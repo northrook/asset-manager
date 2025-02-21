@@ -8,6 +8,7 @@ use Core\View\Element;
 use Core\View\Element\Attributes;
 use Support\Minify\StylesheetMinifier;
 use Stringable;
+use function Support\isPath;
 
 final class Style extends Asset
 {
@@ -46,22 +47,27 @@ final class Style extends Asset
             return;
         }
 
-        $sources = [];
-
-        foreach ( $this->source as $source ) {
-            if ( \str_contains( $source, '*' ) ) {
-                $glob = \glob( $source );
-                dump( $glob );
+        foreach ( $this->source as $key => $source ) {
+            $isPath = isPath( $source );
+            if ( $isPath ) {
+                if ( \glob( $source ) ) {
+                    $this->minifier->setSource( ...\glob( $source ) );
+                }
+                elseif ( \file_exists( $source ) ) {
+                    $this->minifier->setSource( $source );
+                }
+                else {
+                    $this->logger?->notice( 'Source {source} does not exist.', ['source' => $source] );
+                }
             }
             else {
-                dump( $source );
+                $this->minifier->setSource( $source );
             }
         }
 
-        $this->minifier->setSource( ...$sources );
-        $this->minifier->minify( $this->reference->name );
+        // dump( $this->source);
 
-        dump( $this->minifier->getReport() );
+        $this->minifier->minify( $this->reference->name );
 
         $this->compiled = $this->minifier->content;
     }
@@ -73,30 +79,46 @@ final class Style extends Asset
      */
     public function element( array|Attributes $attributes = [] ) : Element
     {
+        $this->compile();
+
         $this->element ??= match ( $this->prefersInline ) {
             true => new Element(
-                tag : 'style',
-                // content : $compiledCSS,
+                tag     : 'style',
+                content : $this->compiled,
             ),
-            default => new Element( 'link' ),
+            default => new Element( 'link', ['rel' => 'stylesheet', 'href' => $this->getSourceUrl()] ),
         };
 
         if ( $attributes ) {
             $this->element->attributes->merge( $attributes );
         }
 
+        $this->element->attributes
+            ->set( 'asset-name', $this->reference->name )
+            ->set( 'asset-type', $this->reference->type->name )
+            ->set( 'asset-id', $this->assetID );
+
         return $this->element;
     }
 
     public function getSourcePath() : string
     {
+        $this->compile();
+
+        $path = $this->pathfinder->get( "{$this->publicAssetsDirectory}/{$this->fileName( 'css' )}" );
+
+        if ( $this->minifier->usedCache() && \file_exists( $path ) ) {
+            return $path;
+        }
+
+        \file_put_contents( $path, $this->compiled );
+
         // Compile, save to public and return full path
-        return __METHOD__;
+        return $path;
     }
 
     public function getSourceUrl() : string
     {
-        // Compile, save to public and return relative URL
-        return __METHOD__;
+        return $this->pathfinder->get( $this->getSourcePath(), $this->publicAssetsDirectory );
     }
 }

@@ -87,6 +87,8 @@ class AssetConfig
             }
         }
 
+
+
         $this->assetDirectories = $assetDirectories;
     }
 
