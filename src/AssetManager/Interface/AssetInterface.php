@@ -40,7 +40,7 @@ interface AssetInterface extends ViewInterface
      *
      * Called when using {@see self::getHtml()} or cast to `string`.
      *
-     * @param array|Attributes $attributes
+     * @param array<string, null|bool|int|string>|Attributes $attributes
      *
      * @return Element
      */

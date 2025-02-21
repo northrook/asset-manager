@@ -17,6 +17,9 @@ final class Style extends Asset
 
     public readonly StylesheetMinifier $minifier;
 
+    public ?string $compiled = null;
+
+    /** @var array<array-key,string> */
     protected array $source;
 
     protected function initialize() : void
@@ -37,12 +40,30 @@ final class Style extends Asset
         return $this;
     }
 
-    protected function construct() : void {
+    protected function compile() : void
+    {
+        if ( $this->compiled ) {
+            return;
+        }
+
         $sources = [];
 
         foreach ( $this->source as $source ) {
-            dump( $source);
+            if ( \str_contains( $source, '*' ) ) {
+                $glob = \glob( $source );
+                dump( $glob );
+            }
+            else {
+                dump( $source );
+            }
         }
+
+        $this->minifier->setSource( ...$sources );
+        $this->minifier->minify( $this->reference->name );
+
+        dump( $this->minifier->getReport() );
+
+        $this->compiled = $this->minifier->content;
     }
 
     /**
@@ -69,11 +90,13 @@ final class Style extends Asset
 
     public function getSourcePath() : string
     {
+        // Compile, save to public and return full path
         return __METHOD__;
     }
 
     public function getSourceUrl() : string
     {
+        // Compile, save to public and return relative URL
         return __METHOD__;
     }
 }

@@ -36,7 +36,7 @@ abstract class Asset implements AssetInterface
 
     abstract protected function initialize() : void;
 
-    abstract protected function construct() : void;
+    abstract protected function compile() : void;
 
     final public function setDependencies(
         AssetReference          $reference,
@@ -70,7 +70,7 @@ abstract class Asset implements AssetInterface
     final public function build(
         ?string $assetID = null,
     ) : AssetInterface {
-        $this->construct();
+        $this->compile();
         $this->setAssetID( $assetID );
         return $this;
     }
