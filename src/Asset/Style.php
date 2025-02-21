@@ -41,10 +41,10 @@ final class Style extends Asset
         return $this;
     }
 
-    protected function compile() : void
+    public function compile() : self
     {
         if ( $this->compiled ) {
-            return;
+            return $this;
         }
 
         foreach ( $this->source as $key => $source ) {
@@ -70,6 +70,8 @@ final class Style extends Asset
         $this->minifier->minify( $this->reference->name );
 
         $this->compiled = $this->minifier->content;
+
+        return $this;
     }
 
     /**
@@ -95,7 +97,6 @@ final class Style extends Asset
 
         $this->element->attributes
             ->set( 'asset-name', $this->reference->name )
-            ->set( 'asset-type', $this->reference->type->name )
             ->set( 'asset-id', $this->assetID );
 
         return $this->element;

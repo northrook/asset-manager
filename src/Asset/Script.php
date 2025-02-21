@@ -2,77 +2,99 @@
 
 namespace Core\Asset;
 
-use Core\AssetManager\Asset;
+use Core\Asset;
+use Core\AssetManager\InlinableAsset;
 use Core\View\Element;
+use Core\View\Element\Attributes;
 use Support\Minify\JavaScriptMinifier;
 use InvalidArgumentException;
+use Stringable;
 
 final class Script extends Asset
 {
+    use InlinableAsset;
+
     public const Type TYPE = Type::SCRIPT;
 
     public readonly JavaScriptMinifier $minifier;
 
-    protected bool $compiled = false;
+    public ?string $compiled = null;
 
     protected ?string $source = null;
 
-    public function element() : Element
+    protected function initialize() : void
     {
-        return $this->element ?? new Element();
+        $this->minifier = new JavaScriptMinifier( $this->cache, $this->logger );
+        $this->source   = \current( $this->reference->source ) ?: null;
     }
 
-    public function compile( bool $mergeImportStatements = false ) : void
+    public function setSource( string|Stringable $source ) : self
     {
-        if ( $this->compiled ) {
-            return;
-        }
-
-        if ( ! isset( $this->minifier ) ) {
-            $this->minifier = new JavaScriptMinifier();
-        }
-
-        if ( ! $this->source ) {
-            $this->addSource( $this->reference->source );
-        }
-
-        $this->minifier->setSource(
-            $this->source ?? throw new InvalidArgumentException(
-                'No Source!',
-            ),
-        );
-        $this->minifier->minify(
-            $this->reference->name,
-            $mergeImportStatements,
-        );
-
-        $this->compiled = true;
-        $this->source   = $this->minifier->content;
+        $this->source = (string) $source;
+        return $this;
     }
 
-    protected function construct( bool $rebuild ) : void
+    /**
+     * @param array<string, null|bool|int|string>|Attributes $attributes
+     *
+     * @return Element
+     */
+    public function element( array|Attributes $attributes = [] ) : Element
     {
-        $publicPath = $this->pathfinder->getPath(
-            "{$this->publicRootKey}/{$this->fileName( 'js' )}",
-        );
-
         $this->compile();
 
-        if ( ! $publicPath->exists() || $this->minifier->usedCache() ) {
-            $publicPath->save( $this->source );
+        $this->element ??= match ( $this->prefersInline ) {
+            true => new Element(
+                tag     : 'script',
+                content : $this->compiled,
+            ),
+            default => new Element( 'script', ['src' => $this->getSourceUrl()] ),
+        };
+
+        if ( $attributes ) {
+            $this->element->attributes->merge( $attributes );
         }
+
+        $this->element->attributes
+            ->set( 'asset-name', $this->reference->name )
+            ->set( 'asset-id', $this->assetID );
+
+        return $this->element;
     }
 
-    public function setMinifier( JavaScriptMinifier $minifier ) : self
+    public function compile( bool $mergeImportStatements = false ) : self
     {
-        $this->minifier ??= $minifier;
+        if ( $this->compiled ) {
+            return $this;
+        }
+
+        $this->minifier->setSource( $this->source ?? throw new InvalidArgumentException( 'No Source!' ) );
+
+        $this->minifier->minify( $this->reference->name );
+
+        $this->compiled = $this->minifier->content;
 
         return $this;
     }
 
-    public function addSource( array $source ) : self
+    public function getSourcePath() : string
     {
-        $this->source = \current( $source ) ?: null;
-        return $this;
+        $this->compile();
+
+        $path = $this->pathfinder->get( "{$this->publicAssetsDirectory}/{$this->fileName( 'js' )}" );
+
+        if ( $this->minifier->usedCache() && \file_exists( $path ) ) {
+            return $path;
+        }
+
+        \file_put_contents( $path, $this->compiled );
+
+        // Compile, save to public and return full path
+        return $path;
+    }
+
+    public function getSourceUrl() : string
+    {
+        return $this->pathfinder->get( $this->getSourcePath(), $this->publicAssetsDirectory );
     }
 }
