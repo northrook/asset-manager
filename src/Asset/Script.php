@@ -92,9 +92,4 @@ final class Script extends Asset
         // Compile, save to public and return full path
         return $path;
     }
-
-    public function getSourceUrl() : string
-    {
-        return $this->pathfinder->get( $this->getSourcePath(), $this->publicAssetsDirectory );
-    }
 }

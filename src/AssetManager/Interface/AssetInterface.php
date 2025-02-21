@@ -20,7 +20,7 @@ interface AssetInterface extends ViewInterface
         Pathfinder              $pathfinder,
         ?CacheItemPoolInterface $cache = null,
         ?LoggerInterface        $logger = null,
-        string                  $cacheDirectory = 'dir.var/assets',
+        string                  $publicDirectory = 'dir.var/assets',
         string                  $publicAssetsDirectory = 'dir.public/assets',
     ) : self;
 

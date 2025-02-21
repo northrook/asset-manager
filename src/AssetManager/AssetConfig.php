@@ -25,6 +25,7 @@ class AssetConfig
      * @param string|string[] $assetDirectories
      * @param string|string[] $configFiles
      * @param string          $cacheDirectory        `dir.var/assets`
+     * @param string          $publicDirectory
      * @param string          $publicAssetsDirectory `dir.public/assets`
      */
     final public function __construct(
@@ -32,6 +33,7 @@ class AssetConfig
         string|array           $assetDirectories,
         string|array           $configFiles,
         public readonly string $cacheDirectory = 'dir.var/assets',
+        public readonly string $publicDirectory = 'dir.public',
         public readonly string $publicAssetsDirectory = 'dir.public/assets',
     ) {
         $this->register = new AssetRegistrationConfig( $this, $pathfinder );
@@ -86,8 +88,6 @@ class AssetConfig
                 throw new InvalidArgumentException( $message );
             }
         }
-
-
 
         $this->assetDirectories = $assetDirectories;
     }

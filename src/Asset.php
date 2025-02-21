@@ -25,7 +25,7 @@ abstract class Asset implements AssetInterface
 
     protected readonly ?LoggerInterface $logger;
 
-    protected readonly string $cacheDirectory;
+    protected readonly string $publicDirectory;
 
     protected readonly string $publicAssetsDirectory;
 
@@ -43,7 +43,7 @@ abstract class Asset implements AssetInterface
         Pathfinder              $pathfinder,
         ?CacheItemPoolInterface $cache = null,
         ?LoggerInterface        $logger = null,
-        string                  $cacheDirectory = 'dir.var/assets',
+        string                  $publicDirectory = 'dir.public',
         string                  $publicAssetsDirectory = 'dir.public/assets',
     ) : AssetInterface {
         if ( $reference->type !== $this::TYPE ) {
@@ -59,7 +59,7 @@ abstract class Asset implements AssetInterface
         $this->pathfinder            = $pathfinder;
         $this->cache                 = $cache;
         $this->logger                = $logger;
-        $this->cacheDirectory        = $cacheDirectory;
+        $this->publicDirectory       = $publicDirectory;
         $this->publicAssetsDirectory = $publicAssetsDirectory;
 
         $this->initialize();
@@ -126,5 +126,10 @@ abstract class Asset implements AssetInterface
         );
 
         return $this->assetID;
+    }
+
+    public function getSourceUrl() : string
+    {
+        return $this->pathfinder->get( $this->getSourcePath(), $this->publicDirectory );
     }
 }

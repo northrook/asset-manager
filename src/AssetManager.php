@@ -93,7 +93,7 @@ class AssetManager implements LoggerAwareInterface
             $this->pathfinder,
             $cache,
             $this->logger,
-            $this->config->cacheDirectory,
+            $this->config->publicDirectory,
             $this->config->publicAssetsDirectory,
         );
 
