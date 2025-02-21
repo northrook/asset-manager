@@ -2,15 +2,12 @@
 
 namespace Core\AssetManager\Interface;
 
-/**
- * @template T as AssetInterface
- */
 interface AssetServiceInterface
 {
     /**
-     * @param T $asset
+     * @param AssetInterface $asset
      *
-     * @return T
+     * @return AssetInterface
      */
     public function __invoke( AssetInterface $asset ) : AssetInterface;
 }
