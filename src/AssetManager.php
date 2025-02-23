@@ -7,7 +7,7 @@ namespace Core;
 use Core\AssetManager\{AssetConfig, Config\AssetReference, Exception\UnknownAssetTypeException};
 use Core\AssetManager\Interface\{AssetInterface, AssetServiceInterface};
 use Cache\CachePoolTrait;
-use Core\Asset\{Style, Type};
+use Core\Asset\{Script, Style, Type};
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface};
 use Symfony\Component\DependencyInjection\ServiceLocator;
@@ -82,8 +82,9 @@ class AssetManager implements LoggerAwareInterface
         $reference = $this->getReference( (string) $reference );
 
         $asset = match ( $reference->type ) {
-            Type::STYLE => new Style(),
-            default     => throw new UnknownAssetTypeException( $reference ),
+            Type::STYLE  => new Style(),
+            Type::SCRIPT => new Script(),
+            default      => throw new UnknownAssetTypeException( $reference ),
         };
 
         $cache = $this->cache instanceof CacheItemPoolInterface ? $this->cache : null;

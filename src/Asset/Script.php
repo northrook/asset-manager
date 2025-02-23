@@ -6,7 +6,7 @@ use Core\Asset;
 use Core\AssetManager\InlinableAsset;
 use Core\View\Element;
 use Core\View\Element\Attributes;
-use Support\Minify\JavaScriptMinifier;
+use Support\JavaScriptMinifier;
 use InvalidArgumentException;
 use Stringable;
 
@@ -72,7 +72,7 @@ final class Script extends Asset
 
         $this->minifier->minify( $this->reference->name );
 
-        $this->compiled = $this->minifier->content;
+        $this->compiled = $this->minifier->__toString();
 
         return $this;
     }

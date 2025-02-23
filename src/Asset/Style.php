@@ -6,7 +6,7 @@ use Core\Asset;
 use Core\AssetManager\InlinableAsset;
 use Core\View\Element;
 use Core\View\Element\Attributes;
-use Support\Minify\StylesheetMinifier;
+use Support\StylesheetMinifier;
 use Stringable;
 use function Support\isPath;
 
@@ -69,7 +69,7 @@ final class Style extends Asset
 
         $this->minifier->minify( $this->reference->name );
 
-        $this->compiled = $this->minifier->content;
+        $this->compiled = $this->minifier->__toString();
 
         return $this;
     }

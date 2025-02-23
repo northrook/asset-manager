@@ -8,8 +8,8 @@ use Core\Asset\Type;
 use Core\Interface\DataInterface;
 use Core\Pathfinder\Path;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
-use const Support\AUTO;
 use InvalidArgumentException;
+use const Support\AUTO;
 
 /**
  * @internal
