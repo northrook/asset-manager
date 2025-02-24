@@ -33,7 +33,7 @@ class AssetManager implements LoggerAwareInterface
         ?CacheItemPoolInterface            $cache = null,
         ?LoggerInterface                   $logger = null,
     ) {
-        $this->cache  = $cache ?? [];
+        $this->setCacheAdapter( $cache, 'asset' );
         $this->logger = $logger;
         dump( $this );
     }

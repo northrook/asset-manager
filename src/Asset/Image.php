@@ -2,7 +2,7 @@
 
 namespace Core\Asset;
 
-use Core\AssetManager\Asset;
+use Core\Asset;
 
 final class Image
 // extends Asset
