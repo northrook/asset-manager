@@ -22,10 +22,18 @@ final class Script extends Asset
 
     protected ?string $source = null;
 
+    protected ?bool $mergeImportStatements = null;
+
     protected function initialize() : void
     {
         $this->minifier = new JavaScriptMinifier( $this->cache, $this->logger );
         $this->source   = \current( $this->reference->source ) ?: null;
+    }
+
+    public function mergeImportStatements( bool $set = true ) : self
+    {
+        $this->mergeImportStatements = $set;
+        return $this;
     }
 
     public function setSource( string|Stringable $source ) : self
@@ -67,12 +75,15 @@ final class Script extends Asset
         if ( $this->compiled ) {
             return $this;
         }
+        $this->mergeImportStatements ??= $mergeImportStatements;
 
         $this->minifier->setSource( $this->source ?? throw new InvalidArgumentException( 'No Source!' ) );
 
-        if ( $mergeImportStatements ) {
+        if ( $this->mergeImportStatements ) {
             $this->minifier->bundleImportStatements();
         }
+
+        $this->minifier->minify( $this->reference->name );
 
         $this->compiled = $this->minifier->__toString();
 
