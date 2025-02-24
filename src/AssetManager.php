@@ -43,7 +43,8 @@ class AssetManager implements LoggerAwareInterface
         ?string               $assetID = null,
         // array|Attributes      $attributes = [],
     ) : ?AssetInterface {
-        $asset = $this->getCache( (string) $reference, fn() => $this->resolveAsset( $reference, $assetID ) );
+        $asset = $this->resolveAsset( $reference, $assetID );
+        // $asset = $this->getCache( (string) $reference, fn() => $this->resolveAsset( $reference, $assetID ) );
         return $asset;
     }
 
