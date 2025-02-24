@@ -35,7 +35,6 @@ class AssetManager implements LoggerAwareInterface
     ) {
         $this->setCacheAdapter( $cache, 'asset' );
         $this->logger = $logger;
-        dump( $this );
     }
 
     public function getAsset(

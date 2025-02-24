@@ -70,7 +70,9 @@ final class Script extends Asset
 
         $this->minifier->setSource( $this->source ?? throw new InvalidArgumentException( 'No Source!' ) );
 
-        $this->minifier->minify( $this->reference->name );
+        if ( $mergeImportStatements ) {
+            $this->minifier->bundleImportStatements();
+        }
 
         $this->compiled = $this->minifier->__toString();
 
