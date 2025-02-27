@@ -34,6 +34,8 @@ abstract class Asset implements AssetInterface
 
     protected ?Element $element = null;
 
+    protected ?string $url = null;
+
     abstract protected function initialize() : void;
 
     abstract public function compile() : self;
@@ -128,8 +130,19 @@ abstract class Asset implements AssetInterface
         return $this->assetID;
     }
 
-    public function getSourceUrl() : string
+    public function getSourceUrl( bool $version = false ) : string
     {
-        return $this->pathfinder->get( $this->getSourcePath(), $this->publicDirectory );
+        $this->url ??= $this->pathfinder->get( $this->getSourcePath(), $this->publicDirectory );
+
+        if ( $version ) {
+            $this->url .= '?v='.$this->getVersion();
+        }
+
+        return $this->url;
+    }
+
+    public function getVersion() : string
+    {
+        return $this->assetID;
     }
 }

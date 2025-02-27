@@ -52,7 +52,18 @@ interface AssetInterface extends ViewInterface
     public function getSourcePath() : string;
 
     /**
+     * @param bool $version Append `?v=`{@see self::getVersion()}
+     *
      * @return string URL relative to `public`
      */
-    public function getSourceUrl() : string;
+    public function getSourceUrl( bool $version = false ) : string;
+
+    /**
+     * Get a version string for this Asset.
+     *
+     * Provides the {@see self::$assetID} by default.
+     *
+     * @return string
+     */
+    public function getVersion() : string;
 }

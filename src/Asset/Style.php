@@ -4,13 +4,14 @@ namespace Core\Asset;
 
 use Core\Asset;
 use Core\AssetManager\InlinableAsset;
+use Core\AssetManager\Interface\MinifiedAssetInterface;
 use Core\View\Element;
 use Core\View\Element\Attributes;
-use Support\StylesheetMinifier;
+use Support\{Minify, StylesheetMinifier};
 use Stringable;
 use function Support\isPath;
 
-final class Style extends Asset
+final class Style extends Asset implements MinifiedAssetInterface
 {
     use InlinableAsset;
 
@@ -47,7 +48,7 @@ final class Style extends Asset
             return $this;
         }
 
-        foreach ( $this->source as $key => $source ) {
+        foreach ( $this->source as $source ) {
             $isPath = isPath( $source );
             if ( $isPath ) {
                 if ( \glob( $source ) ) {
@@ -116,5 +117,10 @@ final class Style extends Asset
 
         // Compile, save to public and return full path
         return $path;
+    }
+
+    public function getMinifier() : Minify
+    {
+        return $this->minifier;
     }
 }

@@ -4,13 +4,15 @@ namespace Core\Asset;
 
 use Core\Asset;
 use Core\AssetManager\InlinableAsset;
+use Core\AssetManager\Interface\MinifiedAssetInterface;
 use Core\View\Element;
 use Core\View\Element\Attributes;
 use Support\JavaScriptMinifier;
 use InvalidArgumentException;
 use Stringable;
+use Support\Minify;
 
-final class Script extends Asset
+final class Script extends Asset implements MinifiedAssetInterface
 {
     use InlinableAsset;
 
@@ -104,5 +106,10 @@ final class Script extends Asset
 
         // Compile, save to public and return full path
         return $path;
+    }
+
+    public function getMinifier() : Minify
+    {
+        return $this->minifier;
     }
 }
