@@ -77,6 +77,11 @@ abstract class Asset implements AssetInterface
         return $this;
     }
 
+    final public function getReference() : AssetReference
+    {
+        return $this->reference;
+    }
+
     public function __toString() : string
     {
         return $this->element()->render();

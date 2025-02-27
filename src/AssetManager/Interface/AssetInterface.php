@@ -24,6 +24,8 @@ interface AssetInterface extends ViewInterface
         string                  $publicAssetsDirectory = 'dir.public/assets',
     ) : self;
 
+    public function getReference() : AssetReference;
+
     /**
      * Parses and compiles all provided sources.
      *
