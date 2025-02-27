@@ -11,6 +11,7 @@ use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 
 /**
+ * @property-read string $name
  * @property-read string $assetID
  */
 interface AssetInterface extends ViewInterface

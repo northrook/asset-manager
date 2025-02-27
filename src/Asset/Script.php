@@ -7,10 +7,9 @@ use Core\AssetManager\InlinableAsset;
 use Core\AssetManager\Interface\MinifiedAssetInterface;
 use Core\View\Element;
 use Core\View\Element\Attributes;
-use Support\JavaScriptMinifier;
+use Support\{JavaScriptMinifier, Minify};
 use InvalidArgumentException;
 use Stringable;
-use Support\Minify;
 
 final class Script extends Asset implements MinifiedAssetInterface
 {
@@ -58,7 +57,10 @@ final class Script extends Asset implements MinifiedAssetInterface
                 tag     : 'script',
                 content : $this->compiled,
             ),
-            default => new Element( 'script', ['src' => $this->getSourceUrl()] ),
+            default => new Element(
+                'script',
+                ['src' => $this->getSourceUrl( true )],
+            ),
         };
 
         if ( $attributes ) {
@@ -89,23 +91,21 @@ final class Script extends Asset implements MinifiedAssetInterface
 
         $this->compiled = $this->minifier->__toString();
 
+        $this->path = $this->pathfinder->get(
+            "{$this->publicAssetsDirectory}/{$this->fileName( 'js' )}",
+        );
+
+        if ( ! $this->minifier->usedCache() || ! \file_exists( $this->path ) ) {
+            \file_put_contents( $this->path, $this->compiled );
+        }
+
         return $this;
     }
 
     public function getSourcePath() : string
     {
-        $this->compile();
-
-        $path = $this->pathfinder->get( "{$this->publicAssetsDirectory}/{$this->fileName( 'js' )}" );
-
-        if ( $this->minifier->usedCache() && \file_exists( $path ) ) {
-            return $path;
-        }
-
-        \file_put_contents( $path, $this->compiled );
-
         // Compile, save to public and return full path
-        return $path;
+        return $this->compile()->path;
     }
 
     public function getMinifier() : Minify

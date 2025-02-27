@@ -72,6 +72,14 @@ final class Style extends Asset implements MinifiedAssetInterface
 
         $this->compiled = $this->minifier->__toString();
 
+        $this->path = $this->pathfinder->get(
+            "{$this->publicAssetsDirectory}/{$this->fileName( 'css' )}",
+        );
+
+        if ( ! $this->minifier->usedCache() || ! \file_exists( $this->path ) ) {
+            \file_put_contents( $this->path, $this->compiled );
+        }
+
         return $this;
     }
 
@@ -89,7 +97,13 @@ final class Style extends Asset implements MinifiedAssetInterface
                 tag     : 'style',
                 content : $this->compiled,
             ),
-            default => new Element( 'link', ['rel' => 'stylesheet', 'href' => $this->getSourceUrl()] ),
+            default => new Element(
+                'link',
+                [
+                    'rel'  => 'stylesheet',
+                    'href' => $this->getSourceUrl( true ),
+                ],
+            ),
         };
 
         if ( $attributes ) {
@@ -105,18 +119,8 @@ final class Style extends Asset implements MinifiedAssetInterface
 
     public function getSourcePath() : string
     {
-        $this->compile();
-
-        $path = $this->pathfinder->get( "{$this->publicAssetsDirectory}/{$this->fileName( 'css' )}" );
-
-        if ( $this->minifier->usedCache() && \file_exists( $path ) ) {
-            return $path;
-        }
-
-        \file_put_contents( $path, $this->compiled );
-
         // Compile, save to public and return full path
-        return $path;
+        return $this->compile()->path;
     }
 
     public function getMinifier() : Minify

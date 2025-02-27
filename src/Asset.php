@@ -29,10 +29,14 @@ abstract class Asset implements AssetInterface
 
     protected readonly string $publicAssetsDirectory;
 
+    public readonly string $name;
+
     /** @var string `16` character alphanumeric */
     public readonly string $assetID;
 
     protected ?Element $element = null;
+
+    protected string $path;
 
     protected ?string $url = null;
 
@@ -53,6 +57,7 @@ abstract class Asset implements AssetInterface
                 'Asset type must be `'.$this::TYPE->name.'`; `'.$reference->type->name.'` given.',
             );
         }
+
         if ( isset( $this->reference ) ) {
             throw new RuntimeException( 'Asset already initialized.' );
         }
@@ -64,6 +69,8 @@ abstract class Asset implements AssetInterface
         $this->publicDirectory       = $publicDirectory;
         $this->publicAssetsDirectory = $publicAssetsDirectory;
 
+        $this->name = $this->reference->name;
+
         $this->initialize();
 
         return $this;
@@ -72,7 +79,6 @@ abstract class Asset implements AssetInterface
     final public function build(
         ?string $assetID = null,
     ) : AssetInterface {
-        // $this->compile();
         $this->setAssetID( $assetID );
         return $this;
     }
