@@ -52,16 +52,15 @@ final class Script extends Asset implements MinifiedAssetInterface
     {
         $this->compile();
 
-        $this->element ??= match ( $this->prefersInline ) {
-            true => new Element(
-                tag     : 'script',
-                content : $this->compiled,
-            ),
-            default => new Element(
-                'script',
-                ['src' => $this->getSourceUrl( true )],
-            ),
-        };
+        $this->element ??= $this->prefersInline
+                ? new Element(
+                    tag     : 'script',
+                    content : $this->compiled,
+                )
+                : new Element(
+                    tag : 'script',
+                    src : $this->getSourceUrl( true ),
+                );
 
         if ( $attributes ) {
             $this->element->attributes->merge( $attributes );

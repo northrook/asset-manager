@@ -92,19 +92,16 @@ final class Style extends Asset implements MinifiedAssetInterface
     {
         $this->compile();
 
-        $this->element ??= match ( $this->prefersInline ) {
-            true => new Element(
-                tag     : 'style',
-                content : $this->compiled,
-            ),
-            default => new Element(
-                'link',
-                [
-                    'rel'  => 'stylesheet',
-                    'href' => $this->getSourceUrl( true ),
-                ],
-            ),
-        };
+        $this->element ??= $this->prefersInline
+                ? new Element(
+                    tag     : 'style',
+                    content : $this->compiled,
+                )
+                : new Element(
+                    tag  : 'link',
+                    rel  : 'stylesheet',
+                    href : $this->getSourceUrl( true ),
+                );
 
         if ( $attributes ) {
             $this->element->attributes->merge( $attributes );
