@@ -48,15 +48,12 @@ class AssetManager implements LoggerAwareInterface
     }
 
     /**
-     * @param string  $asset
-     * @param ?string $assetID
+     * @param string $asset
      *
      * @return AssetReference
      */
-    public function getReference(
-        string  $asset,
-        ?string $assetID = null,
-    ) : AssetReference {
+    public function getReference( string $asset ) : AssetReference
+    {
         return $this->config->getReference( $asset );
     }
 

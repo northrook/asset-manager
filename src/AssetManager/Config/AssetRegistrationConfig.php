@@ -50,6 +50,8 @@ final class AssetRegistrationConfig
         foreach ( (array) $source as $path ) {
             if ( isRelativePath( $path ) ) {
                 foreach ( $this->config->assetDirectories as $key ) {
+                    $this->pathfinder->quiet = true;
+
                     $asset->addSource(
                         $this->pathfinder->get( $key.$path ),
                         $key.$path,
@@ -91,6 +93,7 @@ final class AssetRegistrationConfig
 
         if ( $path->isRelative() ) {
             foreach ( $this->config->assetDirectories as $key ) {
+                $this->pathfinder->quiet = true;
                 $asset->addSource(
                     $this->pathfinder->getPath( "{$key}/{$path}" ),
                     $key,
@@ -118,6 +121,8 @@ final class AssetRegistrationConfig
     ) : self {
         $name  = $this->nameFromPath( $directoryPath, Type::IMAGE );
         $asset = $this->getRegistration( $name );
+
+        $this->pathfinder->quiet = true;
 
         $path = match ( true ) {
             isRelativePath( $directoryPath ) => $this->pathfinder->getPath( "dir.assets/{$directoryPath}" ),
