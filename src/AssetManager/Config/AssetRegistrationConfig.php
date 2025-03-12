@@ -10,6 +10,7 @@ use Core\Pathfinder;
 use Core\Pathfinder\Path;
 use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
+use const Support\AUTO;
 use function Support\isRelativePath;
 
 /**
@@ -21,20 +22,24 @@ final class AssetRegistrationConfig
     /** @var array<string, AssetRegistration> */
     public array $assets = [];
 
+    /**
+     * @param AssetConfig $config
+     * @param Pathfinder  $pathfinder
+     */
     public function __construct(
         private readonly AssetConfig $config,
         private readonly Pathfinder  $pathfinder,
-    ) {}
-
-    public function getRegistration( string $name ) : AssetRegistration
-    {
-        return $this->assets[$name] ?? $this->assets[$name] = new AssetRegistration( $name );
+    ) {
+        $this->assets[Type::IMAGE->name()] = new AssetRegistration( Type::IMAGE->name() );
     }
 
     /**
+     * @noinspection PhpPossiblePolymorphicInvocationInspection
+     *
      * @param string                                                              $name
      * @param string|string[]                                                     $source
      * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
+     * @param null|bool                                                           $prefersInline
      *
      * @return $this
      */
@@ -42,9 +47,10 @@ final class AssetRegistrationConfig
         string                             $name,
         string|array                       $source = [],
         string|array|ReferenceConfigurator $service = [],
+        ?bool                              $prefersInline = AUTO,
     ) : self {
         $name  = $this->assetName( $name, Type::STYLE );
-        $asset = $this->getRegistration( $name );
+        $asset = $this->assetRegistration( $name );
 
         /** @var string $path */
         foreach ( (array) $source as $path ) {
@@ -65,13 +71,19 @@ final class AssetRegistrationConfig
 
         $asset->addService( $service );
 
+        $asset->meta->prefersInline = $prefersInline;
+
         return $this;
     }
 
     /**
+     * @noinspection PhpPossiblePolymorphicInvocationInspection
+     *
      * @param string                                                              $name
      * @param string                                                              $source
      * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
+     * @param bool                                                                $prefersInline
+     * @param bool                                                                $mergeImportStatements
      *
      * @return $this
      */
@@ -79,9 +91,14 @@ final class AssetRegistrationConfig
         string                             $name,
         string                             $source,
         string|array|ReferenceConfigurator $service = [],
+        bool                               $prefersInline = false,
+        bool                               $mergeImportStatements = false,
     ) : self {
         $name  = $this->assetName( $name, Type::SCRIPT );
-        $asset = $this->getRegistration( $name );
+        $asset = $this->assetRegistration( $name );
+
+        $asset->meta->prefersInline         = $prefersInline;
+        $asset->meta->mergeImportStatements = $mergeImportStatements;
 
         if ( \str_contains( $name, '*' ) ) {
             throw new InvalidArgumentException(
@@ -111,36 +128,36 @@ final class AssetRegistrationConfig
 
     /**
      * @param string                                                              $directoryPath
+     * @param ?int                                                                $priority
      * @param array<array-key, bool|string>|ReferenceConfigurator|string|string[] $service
      *
      * @return $this
      */
     public function imageDirectory(
-        string                             $directoryPath,
+        ?string                            $directoryPath = null,
+        ?int                               $priority = AUTO,
         string|array|ReferenceConfigurator $service = [],
     ) : self {
-        $name  = $this->nameFromPath( $directoryPath, Type::IMAGE );
-        $asset = $this->getRegistration( $name );
+        $asset = $this->assetRegistration( Type::IMAGE->name() );
 
         $this->pathfinder->quiet = true;
 
-        $path = match ( true ) {
-            isRelativePath( $directoryPath ) => $this->pathfinder->getPath( "dir.assets/{$directoryPath}" ),
-            default                          => $this->pathfinder->getPath( $directoryPath ),
-        };
+        if ( $directoryPath ) {
+            $path = match ( true ) {
+                isRelativePath( $directoryPath ) => $this->pathfinder->getPath( "dir.assets/{$directoryPath}" ),
+                default                          => $this->pathfinder->getPath( $directoryPath ),
+            };
 
-        $asset->addSource( $path );
+            $asset->addSource( $path, $priority );
+        }
         $asset->addService( $service );
 
         return $this;
     }
 
-    private function nameFromPath( string $path, Type $type ) : string
+    private function assetRegistration( string $name ) : AssetRegistration
     {
-        $name = $this->pathfinder->get( $path, 'dir.root' );
-        $name = (string) \preg_replace( '/[^a-z0-9.]+/i', '.', $name );
-
-        return $this->assetName( $name, $type );
+        return $this->assets[$name] ?? $this->assets[$name] = new AssetRegistration( $name );
     }
 
     private function assetName( string $name, Type $type ) : string

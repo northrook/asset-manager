@@ -2,10 +2,387 @@
 
 namespace Core\Asset;
 
-use Core\Asset;
+use Core\Asset\Meta\ImageMeta;
+use Core\AssetManager\{AssetDefinition};
+use Core\Pathfinder\Path;
+use Core\View\Element;
+use Core\View\Element\Attributes;
+use Intervention\Image\Interfaces\ImageInterface;
+use Support\Image\{Aspect, Blurhash, Orientation};
+use InvalidArgumentException;
+use Stringable;
+use function Support\{normalizeUrl};
+use const Support\AUTO;
+use const Time\HOUR_4;
+use UnitEnum;
 
-final class Image
-// extends Asset
+/**
+ * @property-read ImageMeta $meta
+ */
+final class Image extends AssetDefinition
 {
     public const Type TYPE = Type::IMAGE;
+
+    private readonly ImageInterface $image;
+
+    public readonly Orientation $orientation;
+
+    public readonly Aspect $aspect;
+
+    protected ?string $blurHash = null;
+
+    /** @var array<array-key, array{'filePath': string, 'assetUrl': string, 'width': int, 'height': int, 'position': string}> */
+    protected array $srcset;
+
+    public function __construct(
+        string                 $name,
+        public readonly string $source,
+    ) {
+        parent::__construct( $name );
+
+        $this->aspect      = Aspect::from( $this->source );
+        $this->orientation = $this->aspect->orientation;
+    }
+
+    public function getHtml( bool $asPicture = true ) : Stringable
+    {
+        if ( $asPicture ) {
+            return new Element( 'picture', [...$this->getPictureSources(), $this->element()] );
+        }
+        return $this->element;
+    }
+
+    public function element(
+        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
+    ) : Element {
+        if ( $this->element ) {
+            $this->element->attributes->merge( $attributes );
+            return $this->element;
+        }
+
+        $this->element = new Element( 'img', ...$attributes );
+
+        $this->element->attributes->set( 'src', $this->getFallbackSource() );
+        $this->element->attributes->style->add( $this->getBlurHashBackgroundStyle(), true );
+
+        return $this->element;
+    }
+
+    /**
+     * @param null|int<4,128> $resolution [AUTO]
+     *
+     * @return string
+     */
+    public function getBlurHash( ?int $resolution = AUTO ) : string
+    {
+        if ( $this->blurHash ) {
+            return $this->blurHash;
+        }
+
+        $resolution ??= $this->getSetting( 'asset.image.blurhash.resolution', 64 );
+
+        return $this->blurHash = (string) $this->getCache(
+            key        : "blurhash.{$this->name}.{$resolution}",
+            callback   : fn() => Blurhash::encode( $this->source, $resolution ),
+            expiration : $this->cacheExpiration ?? $this->getSetting(
+                'asset.image.blurhash.expiration',
+                HOUR_4,
+            ),
+        );
+    }
+
+    /**
+     * @param null|int<4,64> $resolution [AUTO]
+     *
+     * @return string
+     */
+    public function getBlurHashDataUri( ?int $resolution = AUTO ) : string
+    {
+        $resolution ??= $this->getSetting( 'asset.image.blurhash_uri.resolution', 12 );
+
+        return $this->getCache(
+            key        : "blurhash_data.{$this->name}.{$resolution}",
+            callback   : fn() => Blurhash::decodeToDataUri( $this->getBlurHash(), $resolution ),
+            expiration : $this->cacheExpiration ?? $this->getSetting(
+                'asset.image.blurhash_uri.expiration',
+                HOUR_4,
+            ),
+        );
+    }
+
+    /**
+     * Returns set of CSS properties and values:
+     *
+     * ```
+     *   background-image: url( .. blurhash );
+     *   background-size:  cover;
+     *   aspect-ratio:     aspect/ratio;
+     * ```
+     *
+     * @param null|int<4,64> $resolution  [AUTO]
+     * @param bool           $aspectRatio
+     *
+     * @return string
+     */
+    public function getBlurHashBackgroundStyle( ?int $resolution = AUTO, bool $aspectRatio = false ) : string
+    {
+        $resolution ??= $this->getSetting( 'asset.image.blurhash_uri.resolution', 8 );
+
+        $data = Blurhash::decodeToDataUri( $this->getBlurHash(), $resolution );
+
+        $style = "background-image: url({$data}); background-size: cover;";
+        // $style = "background-image: url({$data})";
+
+        if ( $aspectRatio ) {
+            $style .= " aspect-ratio: {$this->aspect->getFloat()};";
+        }
+
+        return $style;
+    }
+
+    public function getFallbackSource() : string
+    {
+        return $this->getSrcset()['fallback']['assetUrl'];
+    }
+
+    /**
+     * @param string $alt
+     *
+     * @return string[]
+     */
+    public function getPictureSources( string $alt = '' ) : array
+    {
+        $images   = $this->getSrcset();
+        $fallback = \array_pop( $images )['assetUrl'];
+        $sources  = [];
+
+        foreach ( $images as $image ) {
+            $sources[] = Element::source(
+                srcset : $image['assetUrl'],
+                media  : "(min-width: {$image['width']}px)",
+            );
+        }
+
+        return $sources;
+    }
+
+    /**
+     * @param string $ext
+     * @param bool   $generate
+     *
+     * @return array<array-key, array{'filePath': string, 'assetUrl': string, 'width': int, 'height': int, 'position': string}>
+     */
+    public function getSrcset(
+        ?string $ext = AUTO,
+        bool    $generate = false,
+    ) : array {
+        if ( isset( $this->srcset ) ) {
+            return $this->srcset;
+        }
+
+        $fallback = null;
+
+        $ext ??= $this->getSetting( 'asset.image.extension', 'png' );
+
+        foreach ( $this->meta->getSizes() as $size ) {
+            $fileName = $this->fileName();
+
+            [$width, $height, $position] = $this->srcsetSize( $size );
+
+            $fileName .= "~{$width}x{$height}";
+
+            if ( $position !== 'center' ) {
+                $fileName .= '-'.\trim( \str_replace( ['.', ' ', '--'], '-', $position ), '-' );
+            }
+
+            $fileName .= ".{$ext}";
+
+            $filePath     = "dir.public.assets/{$fileName}";
+            $relativePath = $this->pathfinder->get( $filePath, 'dir.public' );
+
+            $relativePath = "/.project/public{$relativePath}";
+
+            $srcset = [
+                'filePath' => $filePath,
+                'assetUrl' => normalizeUrl( $relativePath ),
+                'width'    => $width,
+                'height'   => $height,
+                'position' => $position,
+            ];
+
+            $this->srcset[] = $srcset;
+
+            if ( ! $fallback && ( $width + $height > $this->getSetting( 'asset.image.fallback_threshold', 1_980 ) ) ) {
+                $fallback = $srcset;
+            }
+
+            if ( $generate ) {
+                $this->createScaledFile(
+                    $filePath,
+                    $width,
+                    $height,
+                    $position,
+                );
+            }
+        }
+
+        if ( ! $this->srcset ) {
+            throw new InvalidArgumentException( 'No image sizes found.' );
+        }
+
+        // Sort by width descending
+        \usort( $this->srcset, fn( $a, $b ) => $b['width'] <=> $a['width'] );
+
+        $this->srcset['fallback'] = $fallback ?? $this->srcset[0];
+
+        return $this->srcset;
+    }
+
+    /**
+     * @param Path|string                                   $path
+     * @param int                                           $width
+     * @param int                                           $height
+     * @param string                                        $position
+     * @param null|callable( ImageInterface):ImageInterface $callback
+     * @param bool                                          $override
+     * @param mixed                                         ...$options
+     *
+     * @return void
+     */
+    public function createScaledFile(
+        Path|string $path,
+        int         $width,
+        int         $height,
+        string      $position = 'center',
+        ?callable   $callback = null,
+        bool        $override = false,
+        mixed    ...$options,
+    ) : void {
+        $path = $this->pathfinder->getPath( $path );
+
+        if ( ! $override && $path->exists() ) {
+            return;
+        }
+
+        if ( ! \is_dir( $path->getPath() ) ) {
+            \mkdir( $path->getPath(), 0777, true );
+        }
+
+        $image = $this->createResizedImage( $width, $height, $position );
+
+        if ( $callback ) {
+            $image = $callback( $image );
+        }
+
+        $image->save( $path->getPathname(), ...$options );
+    }
+
+    public function createResizedImage(
+        int    $width,
+        ?int   $height = AUTO,
+        string $position = 'center',
+    ) : ImageInterface {
+        $this->image ??= \Support\Image::from( $this->source );
+
+        if ( ! $height ) {
+            [$width, $height] = $this->aspect->scaleHeight( $width );
+        }
+
+        $image = ( clone $this->image );
+
+        if ( \str_contains( $position, ' ' ) && \ctype_alnum( \str_replace( ['.', ' ', '%'], '', $position ) ) ) {
+            $longEdge = $width > $height ? $width : $height;
+            [$x, $y]  = $this->relativePosition( $position );
+
+            [$resizeWidth, $resizeHeight] = $this->aspect->scaleShortest( $longEdge );
+
+            // Resize while maintaining aspect ratio
+            $image->resize( $resizeWidth, $resizeHeight );
+
+            // Calculate cropping position in pixels
+            $cropX = (int) ( ( $resizeWidth - $width ) * $x );
+            $cropY = (int) ( ( $resizeHeight - $height ) * $y );
+
+            $image->crop( $width, $height, $cropX, $cropY );
+        }
+        else {
+            $image->cover( $width, $height, $position );
+        }
+
+        return $image;
+    }
+
+    /**
+     * @param string $string
+     *
+     * @return array{0: float, 1: float}
+     */
+    private function relativePosition( string $string ) : array
+    {
+        if ( ! \str_contains( $string, ' ' ) ) {
+            throw new InvalidArgumentException( 'Invalid position string provided.' );
+        }
+
+        $position = [];
+
+        foreach ( \explode( ' ', $string, 2 ) as $percentage ) {
+            $value = \trim( $percentage, " \n\r\t\v\0%.,0" ) ?: '0';
+            if ( ! \str_contains( $value, '.' ) ) {
+                $value = (float) $value / 100;
+            }
+            $position[] = (float) \number_format( (float) $value, 3 );
+        }
+
+        \assert( \count( $position ) === 2, 'Invalid position string provided.' );
+
+        return $position;
+    }
+
+    /**
+     * @param array<int, int|string>|int $size
+     *
+     * @return array{0: int, 1: int, 2: string}
+     */
+    private function srcsetSize( int|array $size ) : array
+    {
+        if ( \is_int( $size ) ) {
+            $size = [$size];
+        }
+
+        if ( ! \is_int( $size[0] ) ) {
+            throw new InvalidArgumentException( 'Invalid size provided.' );
+        }
+
+        $width    = (int) \array_shift( $size );
+        $height   = null;
+        $position = 'center';
+
+        if ( ! isset( $size[1] ) ) {
+            [$width, $height] = $this->aspect->scaleWidth( $width );
+        }
+
+        if ( isset( $size[0] ) && \is_int( $size[0] ) ) {
+            $height = (int) \array_shift( $size );
+        }
+
+        if ( isset( $size[0] ) && \is_string( $size[0] ) ) {
+            $position = (string) \array_shift( $size );
+        }
+
+        return [
+            $width,
+            $height ?? $width,
+            $position,
+        ];
+    }
+
+    protected function export() : array
+    {
+        return [
+            'source'      => $this->source,
+            'blurHash'    => $this->blurHash,
+            'aspect'      => $this->aspect,
+            'orientation' => $this->orientation,
+        ];
+    }
 }

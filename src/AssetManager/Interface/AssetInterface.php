@@ -2,7 +2,7 @@
 
 namespace Core\AssetManager\Interface;
 
-use Core\AssetManager\Config\AssetReference;
+use Core\AssetManager\Asset\AssetReference;
 use Core\Interface\ViewInterface;
 use Core\Pathfinder;
 use Core\View\Element;

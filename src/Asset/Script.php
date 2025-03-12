@@ -2,8 +2,8 @@
 
 namespace Core\Asset;
 
-use Core\Asset;
-use Core\AssetManager\InlinableAsset;
+use Core\Asset\AbstractAsset;
+use Core\AssetManager\Asset\InlinableAsset;
 use Core\AssetManager\Interface\MinifiedAssetInterface;
 use Core\View\Element;
 use Core\View\Element\Attributes;
@@ -11,7 +11,7 @@ use Support\{JavaScriptMinifier, Minify};
 use InvalidArgumentException;
 use Stringable;
 
-final class Script extends Asset implements MinifiedAssetInterface
+final class Script extends AbstractAsset implements MinifiedAssetInterface
 {
     use InlinableAsset;
 

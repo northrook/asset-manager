@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Core\AssetManager\Exception;
 
-use Core\AssetManager\Config\AssetReference;
+use Core\AssetManager\Asset\AssetReference;
 use InvalidArgumentException;
 use Throwable;
 

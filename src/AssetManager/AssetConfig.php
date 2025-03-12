@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Core\AssetManager;
 
-use Core\AssetManager\Config\{AssetReference, AssetRegistrationConfig};
+use Core\AssetManager\Config\{AssetRegistration, AssetRegistrationConfig};
 use Core\AssetManager\Exception\MissingReferenceException;
 use Core\Pathfinder;
 use InvalidArgumentException;
@@ -17,7 +17,7 @@ class AssetConfig
     /** @var string[] */
     public readonly array $assetDirectories;
 
-    /** @var array<string, AssetReference> */
+    /** @var array<string, AssetRegistration> */
     private array $resolved;
 
     /**
@@ -41,8 +41,20 @@ class AssetConfig
         $this->parseConfiguration( (array) $configFiles );
     }
 
-    final public function getReference( string $reference ) : AssetReference
+    final public function hasReference( string $reference ) : bool
     {
+        if ( \str_starts_with( $reference, 'image.' ) ) {
+            $reference = \strstr( $reference, '.', true ) ?: $reference;
+        }
+        return isset( $this->resolve()[$reference] );
+    }
+
+    final public function getReference( string $reference ) : AssetRegistration
+    {
+        if ( \str_starts_with( $reference, 'image.' ) ) {
+            $reference = \strstr( $reference, '.', true ) ?: $reference;
+        }
+
         return $this->resolve()[$reference] ?? throw new MissingReferenceException(
             $reference,
             \array_keys( $this->resolve() ),
@@ -52,7 +64,7 @@ class AssetConfig
     /**
      * @param bool $recompile
      *
-     * @return array<string, AssetReference>
+     * @return array<string, AssetRegistration>
      */
     final public function resolve( bool $recompile = false ) : array
     {
@@ -63,7 +75,7 @@ class AssetConfig
         $assets = [];
 
         foreach ( $this->register->assets as $asset ) {
-            $reference = new AssetReference(
+            $reference = new AssetRegistration(
                 $asset->name,
                 $asset->getSource(),
                 $asset->getServices(),

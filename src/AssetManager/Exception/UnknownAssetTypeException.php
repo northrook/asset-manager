@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace Core\AssetManager\Exception;
 
 use Core\Asset\Type;
-use Core\AssetManager\Config\AssetReference;
+use Core\AssetManager\Asset\AssetReference;
+use Core\AssetManager\Config\AssetRegistration;
 use InvalidArgumentException;
 use Throwable;
 
 final class UnknownAssetTypeException extends InvalidArgumentException
 {
     /**
-     * @param AssetReference|Type $asset
-     * @param null|Throwable      $previous
+     * @param AssetReference|AssetRegistration|Type $asset
+     * @param null|Throwable                        $previous
      */
     public function __construct(
-        Type|AssetReference $asset,
-        ?Throwable          $previous = null,
+        Type|AssetReference|AssetRegistration $asset,
+        ?Throwable                            $previous = null,
     ) {
         $type = $asset instanceof Type ? $asset->name : $asset->type->name;
 

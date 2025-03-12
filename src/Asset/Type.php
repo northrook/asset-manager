@@ -139,8 +139,17 @@ enum Type
     case ICON;
 
     /**
+     * @return lowercase-string
+     */
+    public function name() : string
+    {
+        return \strtolower( $this->name );
+    }
+
+    /**
+     * @param bool $string
+     *
      * @return ($string is true ? string : string[])
-     * @param  bool                                  $string
      */
     public function extensions( bool $string = false ) : array|string
     {
@@ -161,27 +170,27 @@ enum Type
 
     /**
      * @param string|Type $string
-     * @param bool        $throwOnInvalid
+     * @param bool        $nullable
      *
-     * @return ($throwOnInvalid is true ? static : null|static)
+     * @return ($nullable is true ? null|static : static)
      */
-    public static function from( string|Type $string, bool $throwOnInvalid = false ) : ?Type
+    public static function from( string|Type $string, bool $nullable = false ) : ?Type
     {
         if ( $string instanceof self ) {
             return $string;
         }
 
-        $string = \strstr( $string, '.', true ) ?: $string;
+        $ext = \trim( \strrchr( $string, '.' ) ?: $string, '.' );
 
-        $type = Type::MAP[\trim( \strtolower( $string ), ". \n\r\t\v\0" )] ?? null;
+        $type = Type::MAP[$ext] ?? null;
 
         if ( ! $type ) {
-            $string     = \strtoupper( $string );
+            $prefix     = \strtoupper( \strstr( $string, '.', true ) ?: $string );
             $reflection = new ReflectionEnum( self::class );
 
-            if ( $reflection->hasCase( $string ) ) {
+            if ( $reflection->hasCase( $prefix ) ) {
                 try {
-                    $type = $reflection->getCase( $string )->getValue();
+                    $type = $reflection->getCase( $prefix )->getValue();
                 }
                 catch ( ReflectionException ) {
                     $type = null;
@@ -189,13 +198,17 @@ enum Type
             }
         }
 
-        if ( ! $type && $throwOnInvalid ) {
-            $enum    = self::class;
-            $message = "Could not derive {$enum} from string: '{$string}'.";
-            throw new InvalidArgumentException( $message );
+        if ( $type instanceof self ) {
+            return $type;
         }
 
-        /** @var null|static */
-        return $type;
+        if ( $nullable ) {
+            return null;
+        }
+
+        $enum    = self::class;
+        $message = "Could not derive {$enum} from string: '{$string}'.";
+
+        throw new InvalidArgumentException( $message );
     }
 }

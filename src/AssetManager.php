@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Core;
 
-use Core\AssetManager\{AssetConfig, Config\AssetReference, Exception\UnknownAssetTypeException};
+use Core\AssetManager\{AssetConfig,
+    Asset\AssetReference,
+    Config\AssetRegistration,
+    Exception\UnknownAssetTypeException
+};
 use Core\AssetManager\Interface\{AssetInterface, AssetServiceInterface};
 use Cache\CachePoolTrait;
 use Core\Asset\{Script, Style, Type};
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface};
+use Stringable;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use RuntimeException;
 use Throwable;
@@ -37,36 +42,37 @@ class AssetManager implements LoggerAwareInterface
         $this->logger = $logger;
     }
 
-    public function getAsset(
+    /**
+     * Retrieve and `build` an asset by `reference`
+     *
+     * @param AssetReference|string $reference
+     * @param null|string           $assetID
+     *
+     * @return AssetInterface
+     */
+    final public function getAsset(
         AssetReference|string $reference,
         ?string               $assetID = null,
-        // array|Attributes      $attributes = [],
-    ) : ?AssetInterface {
-        $asset = $this->resolveAsset( $reference, $assetID );
-        // $asset = $this->getCache( (string) $reference, fn() => $this->resolveAsset( $reference, $assetID ) );
-        return $asset;
+    ) : AssetInterface {
+        $asset = $this->resolveAsset( $reference );
+
+        return $asset->build( $assetID );
     }
 
     /**
-     * @param string $asset
+     * An {@see AssetRegistration} is the base parameters set by {@see AssetConfig}.
      *
-     * @return AssetReference
+     * @param string|Stringable $asset
+     *
+     * @return AssetRegistration
      */
-    public function getReference( string $asset ) : AssetReference
+    final public function getAssetRegistration( Stringable|string $asset ) : AssetRegistration
     {
-        return $this->config->getReference( $asset );
+        return $this->config->getReference( AssetReference::name( $asset ) );
     }
-
-    // Generate a new TypeAsset object here using $reference
-    // AssetInterface must contain a getSource - the internal question is how do we handle images?
-    // ? Do we just return a single 'master' image, reduced to a manageable size, with a blurhash?
-    // . Or do we pre-parse all sizes? I'm leaning to the above - master+blurhash
-    // .? don't deliver a blurhash - the Framework can do that using a Service
-    // : Each <image> component can then get a default srcset, or request specific sizes
 
     /**
      * @param AssetReference|string $reference
-     * @param null|string           $assetID
      *
      * @return AssetInterface
      *
@@ -74,9 +80,24 @@ class AssetManager implements LoggerAwareInterface
      */
     final protected function resolveAsset(
         AssetReference|string $reference,
-        ?string               $assetID = null,
     ) : AssetInterface {
-        $reference = $this->getReference( (string) $reference );
+        $name = AssetReference::name( $reference );
+
+        $configuration = $this->getAssetRegistration( $name );
+
+        // $reference = new AssetReference(
+        //         $name,
+        //         $configuration->getSource()
+        // );
+
+        // Generate a new TypeAsset object here using $reference
+        // AssetInterface must contain a getSource - the internal question is how do we handle images?
+        // ? Do we just return a single 'master' image, reduced to a manageable size, with a blurhash?
+        // . Or do we pre-parse all sizes? I'm leaning to the above - master+blurhash
+        // .? don't deliver a blurhash - the Framework can do that using a Service
+        // : Each <image> component can then get a default srcset, or request specific sizes
+
+        // dd( \get_defined_vars() );
 
         $asset = match ( $reference->type ) {
             Type::STYLE  => new Style(),
@@ -104,8 +125,7 @@ class AssetManager implements LoggerAwareInterface
             throw new RuntimeException( $e->getMessage(), $e->getCode(), $e );
         }
 
-        $asset->build( $assetID );
-
+        dd( \get_defined_vars() );
         return $asset;
     }
 }

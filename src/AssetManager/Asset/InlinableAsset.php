@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Core\AssetManager;
+namespace Core\AssetManager\Asset;
 
 /**
- * @phpstan-require-extends \Core\Asset
+ * @phpstan-require-extends \Core\Asset\AbstractAsset
  */
 trait InlinableAsset
 {

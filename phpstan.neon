@@ -1,16 +1,22 @@
 parameters:
-	level: 9
+	level: max
 	paths:
 		- src
+		- vendor
 	treatPhpDocTypesAsCertain: false
 	reportUnmatchedIgnoredErrors: false
+	checkExplicitMixedMissingReturn: true
 	ignoreErrors:
 		-
 			message: '#Expression on left side of \?\? is always null.#'
 			path: *.php
 
 		-
-			message: '#Access to an undefined static property .+::\$.+#'
+			message: '#Access to an undefined property .+::\$.+#'
+			path: *.php
+
+		-
+			message: '#Access to an undefined static property .+Interface::\$.+#'
 			path: *.php
 
 		-

@@ -34,7 +34,7 @@ final class AssetService extends Autodiscover
         }
 
         $this->name = $name;
-        $this->type = $type ?? Type::from( $name, true );
+        $this->type = $type ?? Type::from( $name );
 
         parent::__construct(
             serviceID : $this->name,

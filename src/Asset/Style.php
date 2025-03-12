@@ -2,8 +2,8 @@
 
 namespace Core\Asset;
 
-use Core\Asset;
-use Core\AssetManager\InlinableAsset;
+use Core\Asset\AbstractAsset;
+use Core\AssetManager\Asset\InlinableAsset;
 use Core\AssetManager\Interface\MinifiedAssetInterface;
 use Core\View\Element;
 use Core\View\Element\Attributes;
@@ -11,7 +11,7 @@ use Support\{Minify, StylesheetMinifier};
 use Stringable;
 use function Support\isPath;
 
-final class Style extends Asset implements MinifiedAssetInterface
+final class Style extends AbstractAsset implements MinifiedAssetInterface
 {
     use InlinableAsset;
 
