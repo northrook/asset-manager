@@ -179,13 +179,12 @@ enum Type
         if ( $string instanceof self ) {
             return $string;
         }
-
         $ext = \trim( \strrchr( $string, '.' ) ?: $string, '.' );
 
         $type = Type::MAP[$ext] ?? null;
 
         if ( ! $type ) {
-            $prefix     = \strtoupper( \strstr( $string, '.', true ) ?: $string );
+            $prefix     = \strtoupper( \strstr( \str_replace( ['\\', '/'], '.', $string ), '.', true ) ?: $string );
             $reflection = new ReflectionEnum( self::class );
 
             if ( $reflection->hasCase( $prefix ) ) {

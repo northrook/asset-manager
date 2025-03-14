@@ -45,13 +45,15 @@ class AssetManifest implements LazyService
             return $this->loaded[$reference];
         }
 
-        if ( ! $this->hasCache( $name ) ) {
+        if ( ! $this->hasCache( $reference ) ) {
             $this->resolve( $reference );
         }
 
         $asset = \unserialize( (string) $this->getCache( $name ) );
 
-        \assert( $asset instanceof AssetDefinition );
+        if ( ! $asset instanceof AssetDefinition ) {
+            dd( \get_defined_vars() );
+        }
 
         $this->loaded[$reference] = $asset;
 
@@ -93,8 +95,12 @@ class AssetManifest implements LazyService
                 continue;
             }
 
-            $this->setCache( $name, \serialize( new ImageAsset( $name, $file->getPathname() ) ) );
+            $data = \serialize( new ImageAsset( $name, $file->getPathname() ) );
+
+            $this->setCache( $name, $data, 0, true );
         }
+
+        dump( $this );
     }
 
     final protected function resolveStyle( ?string $asset = null ) : void

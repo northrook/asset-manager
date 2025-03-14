@@ -11,7 +11,7 @@ use Intervention\Image\Interfaces\ImageInterface;
 use Support\Image\{Aspect, Blurhash, Orientation};
 use InvalidArgumentException;
 use Stringable;
-use function Support\{normalizeUrl};
+use Support\Image;
 use const Support\AUTO;
 use const Time\HOUR_4;
 use UnitEnum;
@@ -43,6 +43,8 @@ final class ImageAsset extends AssetDefinition
 
         $this->aspect      = Aspect::from( $this->source );
         $this->orientation = $this->aspect->orientation;
+
+        dump( $this );
     }
 
     public function getHtml( bool $asPicture = true ) : Stringable
@@ -64,7 +66,8 @@ final class ImageAsset extends AssetDefinition
         $this->element = new Element( 'img', ...$attributes );
 
         $this->element->attributes->set( 'src', $this->getFallbackSource() );
-        $this->element->attributes->style->add( $this->getBlurHashBackgroundStyle(), true );
+        $this->element->attributes->style->add( $this->getBlurHashBackgroundStyle( aspectRatio : true ), true );
+        $this->element->attributes->style->add( 'width: 100%; height: auto;' );
 
         return $this->element;
     }
@@ -132,7 +135,6 @@ final class ImageAsset extends AssetDefinition
         $data = Blurhash::decodeToDataUri( $this->getBlurHash(), $resolution );
 
         $style = "background-image: url({$data}); background-size: cover;";
-        // $style = "background-image: url({$data})";
 
         if ( $aspectRatio ) {
             $style .= " aspect-ratio: {$this->aspect->getFloat()};";
@@ -147,17 +149,13 @@ final class ImageAsset extends AssetDefinition
     }
 
     /**
-     * @param string $alt
-     *
      * @return string[]
      */
-    public function getPictureSources( string $alt = '' ) : array
+    public function getPictureSources() : array
     {
-        $images   = $this->getSrcset();
-        $fallback = \array_pop( $images )['assetUrl'];
-        $sources  = [];
+        $sources = [];
 
-        foreach ( $images as $image ) {
+        foreach ( $this->getSrcset() as $image ) {
             $sources[] = Element::source(
                 srcset : $image['assetUrl'],
                 media  : "(min-width: {$image['width']}px)",
@@ -199,13 +197,11 @@ final class ImageAsset extends AssetDefinition
             $fileName .= ".{$ext}";
 
             $filePath     = "dir.public.assets/{$fileName}";
-            $relativePath = $this->pathfinder->get( $filePath, 'dir.public' );
-
-            $relativePath = "/.project/public{$relativePath}";
+            $relativePath = $this->pathfinder->getUrl( $filePath, 'dir.public' );
 
             $srcset = [
                 'filePath' => $filePath,
-                'assetUrl' => normalizeUrl( $relativePath ),
+                'assetUrl' => $relativePath,
                 'width'    => $width,
                 'height'   => $height,
                 'position' => $position,
@@ -283,7 +279,7 @@ final class ImageAsset extends AssetDefinition
         ?int   $height = AUTO,
         string $position = 'center',
     ) : ImageInterface {
-        $this->image ??= \Support\Image::from( $this->source );
+        $this->image ??= Image::from( $this->source );
 
         if ( ! $height ) {
             [$width, $height] = $this->aspect->scaleHeight( $width );

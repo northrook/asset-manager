@@ -21,18 +21,25 @@ trait AssetValidationTrait
             throw new InvalidArgumentException( 'AssetReference name cannot be empty.' );
         }
 
-        $type = \strtolower( Type::from( $name )->name );
+        $type = Type::from( $name );
 
-        if ( \str_starts_with( $name, "{$type}." ) && \ctype_alnum( \str_replace( '.', '', $name ) ) ) {
+        if ( \str_starts_with( $name, "{$type->name()}." ) && $this->isName( $name ) ) {
             return $name;
         }
 
         if ( isPath( $name ) ) {
-            $usePath = \strrchr( $name, '.', true ) ?: $name;
+            // Normalize path to name structure
+            $usePath = \trim( \str_replace( ['\\', '/'], '/', $name ), " \n\r\t\v\0/" );
 
-            $usePath = \str_replace( ['\\', '/'], '/', $usePath );
+            // Remove Extensions
+            if ( $extension = \pathinfo( $name, PATHINFO_EXTENSION ) ) {
+                $usePath = \substr( $usePath, 0, -\strlen( $extension ) - 1 );
+            }
 
-            $fromSource = "assets/{$type}";
+            // Remove ~meta
+            $usePath = \strstr( $usePath, '~', true ) ?: $usePath;
+
+            $fromSource = "assets/{$type->name()}";
 
             $strpos = \strpos( $usePath, $fromSource ) + \strlen( $fromSource );
 
@@ -44,11 +51,11 @@ trait AssetValidationTrait
         $name = slug( $name );
 
         \assert(
-            \ctype_alnum( \str_replace( ['.', '-'], '', $name ) ),
-            "Asset names must only contain ASCII letters, numbers, periods, and hyphens. '{$from}' provided.",
+            $this->isName( $name ),
+            "Asset names must only contain ASCII letters, numbers, periods, and hyphens. '{$name}' provided.",
         );
 
-        return "{$type}.{$name}";
+        return "{$type->name()}.{$name}";
     }
 
     protected function isAssetID( string $string ) : bool
