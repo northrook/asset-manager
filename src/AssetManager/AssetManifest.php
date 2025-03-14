@@ -51,9 +51,7 @@ class AssetManifest implements LazyService
 
         $asset = \unserialize( (string) $this->getCache( $name ) );
 
-        if ( ! $asset instanceof AssetDefinition ) {
-            dd( \get_defined_vars() );
-        }
+        \assert( $asset instanceof AssetDefinition );
 
         $this->loaded[$reference] = $asset;
 
@@ -97,7 +95,7 @@ class AssetManifest implements LazyService
 
             $data = \serialize( new ImageAsset( $name, $file->getPathname() ) );
 
-            $this->setCache( $name, $data, 0, true );
+            $this->setCache( $name, $data );
         }
 
         dump( $this );
