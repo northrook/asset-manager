@@ -4,26 +4,30 @@ namespace Core\AssetManager;
 
 use Cache\CachePoolTrait;
 use Core\Asset\Type;
+use Core\AssetManager\Compiler\AssetValidationTrait;
 use Core\AssetManager\Config\AssetRegistration;
-use Core\AssetManager\Interface\AssetMetaInterface;
+use Core\AssetManager\Interface\{AssetInterface, AssetMetaInterface};
 use Core\Pathfinder;
 use Core\Symfony\DependencyInjection\SettingsAccessor;
 use Core\View\Element;
 use Core\View\Element\Attributes;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Log\{LoggerAwareInterface, LoggerInterface};
 use Stringable;
 use UnitEnum;
+use function Support\{key_hash};
 use const Time\HOUR_4;
-use LogicException;
 
-abstract class AssetDefinition implements Stringable
+abstract class AssetDefinition implements AssetInterface
 {
-    use CachePoolTrait, SettingsAccessor;
+    use CachePoolTrait, SettingsAccessor, AssetValidationTrait;
 
     public const Type TYPE = Type::ABSTRACT;
 
     /** @var string `type.name` */
     public readonly string $name;
+
+    public readonly string $reference;
 
     public readonly Type $type;
 
@@ -34,21 +38,22 @@ abstract class AssetDefinition implements Stringable
 
     protected readonly Pathfinder $pathfinder;
 
+    protected readonly ?LoggerInterface $logger;
+
     protected ?Element $element = null;
 
-    /**
-     * @param string              $name
-     * @param ?AssetMetaInterface $meta
-     */
-    public function __construct( string $name, ?AssetMetaInterface $meta = null )
-    {
+    public function __construct(
+        string              $name,
+        ?AssetMetaInterface $meta = null,
+    ) {
         \assert(
-            \ctype_alnum( \str_replace( ['.', '-'], '', $name ) ),
+            $this->isName( $name ),
             "Asset names must only contain ASCII letters, numbers, periods, and hyphens. '{$name}' provided.",
         );
 
-        $this->name = $name;
-        $this->type = Type::from( $name );
+        $this->name      = $name;
+        $this->type      = Type::from( $name );
+        $this->reference = \hash( 'xxh64', $name );
 
         \assert(
             $this::TYPE === $this->type,
@@ -58,22 +63,59 @@ abstract class AssetDefinition implements Stringable
         $this->meta = $meta ?? AssetRegistration::getDefaultMeta( $this->type );
     }
 
+    final public function setDependencies(
+        Pathfinder              $pathfinder,
+        ?CacheItemPoolInterface $cache = null,
+        ?LoggerInterface        $logger = null,
+    ) : self {
+        $this->pathfinder ??= $pathfinder;
+        $this->logger     ??= $logger;
+
+        $this->assignCacheAdapter(
+            cache      : $cache,
+            prefix     : 'manifest',
+            defer      : $this->getSetting( 'asset.cache.defer', true ),
+            expiration : $this->getSetting( 'asset.cache.expiration', HOUR_4 ),
+        );
+
+        if ( $this->logger && $this->cache instanceof LoggerAwareInterface ) {
+            $this->cache->setLogger( $this->logger );
+        }
+
+        $this->initialize();
+
+        return $this;
+    }
+
+    abstract protected function initialize() : void;
+
     /**
-     * Return the HTML element for this Asset.
-     *
-     * Called when using {@see self::getHtml()} or cast to `string`.
-     *
      * @param null|array<array-key, ?string>|Attributes|scalar|UnitEnum ...$attributes
-     *
-     * @return Element
      */
     abstract public function element(
         Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
     ) : Element;
 
+    final public function build( ?string $assetID = null ) : self
+    {
+        $this->assetID ??= $assetID ?? key_hash( 'xxh32', $this::class, $this->name, $this->meta );
+
+        \assert(
+            $this->isAssetID( $this->assetID, $message ),
+            $message,
+        );
+
+        return $this;
+    }
+
     public function getHtml() : Stringable
     {
         return $this->element()->getHtml();
+    }
+
+    public function getVersion() : string
+    {
+        return $this->assetID;
     }
 
     final public function __toString() : string
@@ -81,50 +123,20 @@ abstract class AssetDefinition implements Stringable
         return (string) $this->getHtml();
     }
 
-    /**
-     * @param null|string $assetID
-     *
-     * @return $this
-     */
-    final public function build(
-        ?string $assetID = null,
-    ) : self {
-        $this->assetID ??= $assetID ?? \hash( 'xxh32', $this->assetID() );
-        \assert(
-            \strlen( $this->assetID ) === 8 && \ctype_alnum( $this->assetID ),
-            'Asset ID must be 16 alphanumeric characters; ['.\strlen(
-                $this->assetID,
-            )."] `{$this->assetID}` given",
-        );
-        return $this;
+    final public function __serialize() : array
+    {
+        return [
+            'name'      => $this->name,
+            'type'      => $this->type,
+            'reference' => $this->reference,
+            'meta'      => $this->meta,
+        ] + $this->export();
     }
 
     /**
-     * Set by the {@see AssetManifest}.
-     *
-     * @internal
-     *
-     * @param Pathfinder $pathfinder
-     *
-     * @param ?CacheItemPoolInterface $cache
-     *
-     * @return self
+     * @return array<string, mixed>
      */
-    final public function setDependencies(
-        Pathfinder              $pathfinder,
-        ?CacheItemPoolInterface $cache = null,
-    ) : self {
-        $this->pathfinder ??= $pathfinder;
-
-        $this->setCacheAdapter(
-            cache      : $cache,
-            prefix     : 'manifest',
-            defer      : $this->getSetting( 'asset.cache.defer', true ),
-            expiration : $this->getSetting( 'asset.cache.expiration', HOUR_4 ),
-        );
-
-        return $this;
-    }
+    abstract protected function export() : array;
 
     final protected function fileName( ?string $ext = null ) : string
     {
@@ -136,31 +148,4 @@ abstract class AssetDefinition implements Stringable
 
         return $fileName;
     }
-
-    /**
-     * @param null|string $assetID
-     *
-     * @return string `8` hexadecimal
-     */
-    protected function assetID() : string
-    {
-        if ( isset( $this->assetID ) ) {
-            throw new LogicException( 'Asset ID has already been set.' );
-        }
-        return \implode( ':', [$this::class, $this->name, \serialize( $this->meta )] );
-    }
-
-    final public function __serialize() : array
-    {
-        return [
-            'name' => $this->name,
-            'type' => $this->type,
-            'meta' => $this->meta,
-        ] + $this->export();
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    abstract protected function export() : array;
 }

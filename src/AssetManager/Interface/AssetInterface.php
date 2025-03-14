@@ -2,30 +2,40 @@
 
 namespace Core\AssetManager\Interface;
 
-use Core\AssetManager\Asset\AssetReference;
+use Core\Asset\Type;
 use Core\Interface\ViewInterface;
 use Core\Pathfinder;
 use Core\View\Element;
 use Core\View\Element\Attributes;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
+use UnitEnum;
 
 /**
  * @property-read string $name
+ * @property-read Type   $type
  * @property-read string $assetID
  */
 interface AssetInterface extends ViewInterface
 {
+
+    /**
+     * Set by the {@see AssetManifest}.
+     *
+     * @internal
+     *
+     * @param Pathfinder $pathfinder
+     *
+     * @param ?CacheItemPoolInterface $cache
+     * @param ?LoggerInterface        $logger
+     *
+     * @return self
+     */
     public function setDependencies(
-        AssetReference          $reference,
         Pathfinder              $pathfinder,
         ?CacheItemPoolInterface $cache = null,
         ?LoggerInterface        $logger = null,
-        string                  $publicDirectory = 'dir.var/assets',
-        string                  $publicAssetsDirectory = 'dir.public/assets',
     ) : self;
-
-    public function getReference() : AssetReference;
 
     /**
      * Parses and compiles all provided sources.
@@ -43,11 +53,13 @@ interface AssetInterface extends ViewInterface
      *
      * Called when using {@see self::getHtml()} or cast to `string`.
      *
-     * @param array<string, null|bool|int|string>|Attributes $attributes
+     * @param null|array<array-key, ?string>|Attributes|scalar|UnitEnum ...$attributes
      *
      * @return Element
      */
-    public function element( array|Attributes $attributes = [] ) : Element;
+    public function element(
+        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
+    ) : Element;
 
     /**
      * @return string

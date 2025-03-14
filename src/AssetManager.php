@@ -5,29 +5,36 @@ declare(strict_types=1);
 namespace Core;
 
 use Core\AssetManager\{AssetConfig,
-    Asset\AssetReference,
+    AssetDefinition,
+    AssetManifest,
+    Compiler\AssetValidationTrait,
     Config\AssetRegistration,
-    Exception\UnknownAssetTypeException
+    Exception\UnknownAssetRegistrationException,
+    Exception\UnknownAssetTypeException,
+    Exception\UnresolvedAssetException
 };
 use Core\AssetManager\Interface\{AssetInterface, AssetServiceInterface};
 use Cache\CachePoolTrait;
-use Core\Asset\{Script, Style, Type};
+use Core\Interface\LazyService;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Log\{LoggerAwareInterface, LoggerAwareTrait, LoggerInterface};
+use Psr\Log\{LoggerAwareInterface, LoggerInterface};
 use Stringable;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use RuntimeException;
 use Throwable;
+use const Support\AUTO;
 
-// #[Lazy]
-class AssetManager implements LoggerAwareInterface
+class AssetManager implements LazyService, LoggerAwareInterface
 {
-    use CachePoolTrait, LoggerAwareTrait;
+    use CachePoolTrait, AssetValidationTrait;
+
+    private readonly AssetManifest $manifest;
 
     /**
      * @param AssetConfig                            $config
      * @param Pathfinder                             $pathfinder
      * @param ?ServiceLocator<AssetServiceInterface> $serviceLocator
+     * @param AssetManifest                          $manifest
      * @param ?CacheItemPoolInterface                $cache
      * @param ?LoggerInterface                       $logger
      */
@@ -35,97 +42,123 @@ class AssetManager implements LoggerAwareInterface
         public readonly AssetConfig        $config,
         protected readonly Pathfinder      $pathfinder,
         protected readonly ?ServiceLocator $serviceLocator = null,
+        ?AssetManifest                     $manifest = AUTO,
         ?CacheItemPoolInterface            $cache = null,
-        ?LoggerInterface                   $logger = null,
+        protected ?LoggerInterface         $logger = null,
     ) {
-        $this->setCacheAdapter( $cache, 'asset' );
-        $this->logger = $logger;
+        $this->assignCacheAdapter( $cache, 'asset' );
+
+        if ( $manifest ) {
+            $this->manifest = $manifest;
+        }
+    }
+
+    final public function getManifest() : AssetManifest
+    {
+        return $this->manifest ??= new AssetManifest(
+            config : $this->config,
+            cache  : $this->cache instanceof CacheItemPoolInterface ? $this->cache : null,
+            logger : $this->logger,
+        );
     }
 
     /**
-     * Retrieve and `build` an asset by `reference`
+     * Retrieve and `build` an asset.
      *
-     * @param AssetReference|string $reference
-     * @param null|string           $assetID
+     * Accepts:
+     * - `assetName` - `type.directory.asset-name`
+     * - `assetReference` - 16 character hexadecimal key
+     * - `assetPath` - absolute or relative path to asset
+     *
+     * @param string      $asset
+     * @param null|string $assetID
      *
      * @return AssetInterface
+     *
+     * @throws UnresolvedAssetException
      */
     final public function getAsset(
-        AssetReference|string $reference,
-        ?string               $assetID = null,
+        string  $asset,
+        ?string $assetID = null,
     ) : AssetInterface {
-        $asset = $this->resolveAsset( $reference );
-
-        return $asset->build( $assetID );
+        return $this
+            ->resolveAsset( $asset )
+            ->build( $assetID );
     }
 
     /**
      * An {@see AssetRegistration} is the base parameters set by {@see AssetConfig}.
      *
-     * @param string|Stringable $asset
+     * @param string|Stringable $from
      *
      * @return AssetRegistration
+     * @throws UnknownAssetRegistrationException
      */
-    final public function getAssetRegistration( Stringable|string $asset ) : AssetRegistration
+    final public function getAssetRegistration( string|Stringable $from ) : AssetRegistration
     {
-        return $this->config->getReference( AssetReference::name( $asset ) );
+        return $this->config->getReference( $this->getName( $from ) );
     }
 
     /**
-     * @param AssetReference|string $reference
+     * @param string $from
      *
      * @return AssetInterface
      *
      * @throws UnknownAssetTypeException
      */
-    final protected function resolveAsset(
-        AssetReference|string $reference,
-    ) : AssetInterface {
-        $name = AssetReference::name( $reference );
+    final protected function resolveAsset( string $from ) : AssetInterface
+    {
+        // ? If $reference is exactly 16 hexadecimal characters
+        // . resolve using assetReference
 
-        $configuration = $this->getAssetRegistration( $name );
+        $name = $this->getName( $from );
 
-        // $reference = new AssetReference(
-        //         $name,
-        //         $configuration->getSource()
-        // );
-
-        // Generate a new TypeAsset object here using $reference
-        // AssetInterface must contain a getSource - the internal question is how do we handle images?
-        // ? Do we just return a single 'master' image, reduced to a manageable size, with a blurhash?
-        // . Or do we pre-parse all sizes? I'm leaning to the above - master+blurhash
-        // .? don't deliver a blurhash - the Framework can do that using a Service
-        // : Each <image> component can then get a default srcset, or request specific sizes
-
-        // dd( \get_defined_vars() );
-
-        $asset = match ( $reference->type ) {
-            Type::STYLE  => new Style(),
-            Type::SCRIPT => new Script(),
-            default      => throw new UnknownAssetTypeException( $reference ),
-        };
-
-        $cache = $this->cache instanceof CacheItemPoolInterface ? $this->cache : null;
+        $asset = $this->getManifest()->get( $name );
 
         $asset->setDependencies(
-            $reference,
             $this->pathfinder,
-            $cache,
+            $this->cache instanceof CacheItemPoolInterface ? $this->cache : null,
             $this->logger,
-            $this->config->publicDirectory,
-            $this->config->publicAssetsDirectory,
         );
 
         try {
-            if ( $this->serviceLocator?->has( $reference->name ) ) {
-                $asset = $this->serviceLocator->get( $reference->name )( $asset );
+            if ( $this->hasTypePass( $asset ) ) {
+                $this->logger?->alert(
+                    'The Asset {type} has a TypePass.',
+                    ['type' => $asset->type->name],
+                );
+            }
+
+            if ( $this->hasServicePass( $asset ) ) {
+                $asset = $this->serviceLocator?->get( $asset->name )( $asset );
             }
         }
         catch ( Throwable $e ) {
             throw new RuntimeException( $e->getMessage(), $e->getCode(), $e );
         }
 
-        dd( \get_defined_vars() );
         return $asset;
+    }
+
+    private function hasTypePass( AssetDefinition $asset ) : bool
+    {
+        return (bool) $this->serviceLocator?->has( $asset->type->name );
+    }
+
+    private function hasServicePass( AssetDefinition $asset ) : bool
+    {
+        return (bool) $this->serviceLocator?->has( $asset->name );
+    }
+
+    /**
+     * Sets a logger.
+     *
+     * @internal
+     *
+     * @param LoggerInterface $logger
+     */
+    final public function setLogger( LoggerInterface $logger ) : void
+    {
+        $this->logger ??= $logger;
     }
 }

@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace Core\AssetManager\Asset;
 
+use Core\AssetManager\AssetDefinition;
+
 /**
- * @phpstan-require-extends \Core\Asset\AbstractAsset
+ * @phpstan-require-extends AssetDefinition
  */
 trait InlinableAsset
 {
-    protected ?bool $prefersInline = null;
-
-    public function prefersInline( ?bool $set = true ) : self
+    public function prefersInline( bool $set = true ) : self
     {
-        $this->prefersInline = $set;
+        \assert(
+            \property_exists( $this->meta, 'prefersInline' ),
+            "The use of 'InlinableAsset' requires the 'AssetMeta' to have a 'prefersInline' property.'",
+        );
+
+        $this->meta->prefersInline = $set;
         return $this;
     }
 }

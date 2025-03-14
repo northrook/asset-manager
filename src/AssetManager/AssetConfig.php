@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Core\AssetManager;
 
 use Core\AssetManager\Config\{AssetRegistration, AssetRegistrationConfig};
-use Core\AssetManager\Exception\MissingReferenceException;
+use Core\AssetManager\Exception\UnknownAssetRegistrationException;
 use Core\Pathfinder;
+use Core\Interface\LazyService;
 use InvalidArgumentException;
 
-// #[Lazy]
-class AssetConfig
+class AssetConfig implements LazyService
 {
     public readonly AssetRegistrationConfig $register;
 
@@ -49,13 +49,19 @@ class AssetConfig
         return isset( $this->resolve()[$reference] );
     }
 
+    /**
+     * @param string $reference
+     *
+     * @return AssetRegistration
+     * @throws UnknownAssetRegistrationException
+     */
     final public function getReference( string $reference ) : AssetRegistration
     {
         if ( \str_starts_with( $reference, 'image.' ) ) {
             $reference = \strstr( $reference, '.', true ) ?: $reference;
         }
 
-        return $this->resolve()[$reference] ?? throw new MissingReferenceException(
+        return $this->resolve()[$reference] ?? throw new UnknownAssetRegistrationException(
             $reference,
             \array_keys( $this->resolve() ),
         );
@@ -68,23 +74,25 @@ class AssetConfig
      */
     final public function resolve( bool $recompile = false ) : array
     {
-        if ( isset( $this->resolved ) && ! $recompile ) {
-            return $this->resolved;
-        }
-
-        $assets = [];
-
-        foreach ( $this->register->assets as $asset ) {
-            $reference = new AssetRegistration(
-                $asset->name,
-                $asset->getSource(),
-                $asset->getServices(),
-            );
-
-            $assets[$asset->name] = $reference;
-        }
-
-        return $this->resolved = $assets;
+        return $this->register->assets;
+        // if ( isset( $this->resolved ) && ! $recompile ) {
+        //     return $this->resolved;
+        // }
+        //
+        // $assets = [];
+        //
+        // foreach ( $this->register->assets as $asset ) {
+        //     $reference = new AssetRegistration(
+        //         $asset->name,
+        //         $asset->getSource(),
+        //         $asset->getServices(),
+        //         $asset->meta,
+        //     );
+        //
+        //     $assets[$asset->name] = $reference;
+        // }
+        //
+        // return $this->resolved = $assets;
     }
 
     /**

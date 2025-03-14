@@ -6,14 +6,13 @@ namespace Core\AssetManager\Config;
 
 use Core\Asset\Meta\{AssetMeta, ImageMeta, ScriptMeta, StyleMeta};
 use Core\Asset\Type;
-use Core\AssetManager\AssetDefinition;
+use Core\AssetManager\Compiler\AssetValidationTrait;
 use Core\AssetManager\Interface\AssetMetaInterface;
 use Core\Interface\DataInterface;
 use Core\Pathfinder\Path;
 use Stringable;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
 use InvalidArgumentException;
-use function Support\{isPath, slug};
 use const Support\AUTO;
 
 /**
@@ -21,6 +20,8 @@ use const Support\AUTO;
  */
 final class AssetRegistration implements DataInterface, Stringable
 {
+    use AssetValidationTrait;
+
     /** @var string `type.name` */
     public readonly string $name;
 
@@ -32,23 +33,25 @@ final class AssetRegistration implements DataInterface, Stringable
     private array $service;
 
     /**
-     * @param string   $name
-     * @param string[] $source
-     * @param string[] $service
+     * @param string              $name
+     * @param string[]            $source
+     * @param string[]            $service
+     * @param ?AssetMetaInterface $meta
      */
     public function __construct(
-        string        $name,
-        private array $source = [],
-        array         $service = [],
+        string              $name,
+        private array       $source = [],
+        array               $service = [],
+        ?AssetMetaInterface $meta = AUTO,
     ) {
         \assert(
-            \ctype_alpha( \str_replace( ['.', '-'], '', $name ) ),
+            $this->isName( $name ),
             "Asset names must only contain ASCII characters, underscores and dashes. {$name} provided.",
         );
 
         $this->name = $name;
         $this->type = Type::from( $name );
-        $this->meta = $this::getDefaultMeta( $this->type );
+        $this->meta = $meta ?? $this::getDefaultMeta( $this->type );
 
         $this->service = \array_fill_keys( $service, true );
     }
@@ -157,44 +160,6 @@ final class AssetRegistration implements DataInterface, Stringable
         $this->source[$key] = (string) $path;
 
         \ksort( $this->source );
-    }
-
-    public static function getName( Stringable|string $from ) : string
-    {
-        if ( $from instanceof AssetDefinition || $from instanceof AssetRegistration ) {
-            return $from->name;
-        }
-
-        if ( ! $name = (string) $from ) {
-            throw new InvalidArgumentException( 'AssetReference name cannot be empty.' );
-        }
-
-        $type = \strtolower( Type::from( $name )->name );
-
-        if ( \str_starts_with( $name, "{$type}." ) && \ctype_alnum( \str_replace( '.', '', $name ) ) ) {
-            return $name;
-        }
-
-        if ( isPath( $name ) ) {
-            $usePath = \strrchr( $name, '.', true ) ?: $name;
-
-            $usePath = \str_replace( ['\\', '/'], '/', $usePath );
-
-            $fromSource = "assets/{$type}";
-
-            $strpos = \strpos( $usePath, $fromSource ) + \strlen( $fromSource );
-
-            $trimmed = \substr( $usePath, $strpos );
-
-            $name = \trim( \strstr( $trimmed, '/' ) ?: $trimmed, " \n\r\t\v\0/." );
-        }
-
-        \assert(
-            \ctype_alnum( \str_replace( ['.', '-'], '', $name ) ),
-            "AssetReference names must only contain ASCII letters, numbers, periods, and hyphens. '{$from}' provided.",
-        );
-
-        return "{$type}.".slug( $name );
     }
 
     public static function getDefaultMeta( ?Type $type ) : AssetMetaInterface

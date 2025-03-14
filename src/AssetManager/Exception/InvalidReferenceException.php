@@ -17,7 +17,7 @@ final class InvalidReferenceException extends InvalidArgumentException
         string     $reference,
         ?Throwable $previous = null,
     ) {
-        $message = "The string '{$reference}' is not a valid reference name.'";
+        $message = "The string '{$reference}' is not a valid reference name.";
         $message .= "\n\nAssetReference must only contain ASCII letters, numbers, periods, and hyphens.";
 
         parent::__construct( $message, 500, $previous );

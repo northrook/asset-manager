@@ -5,156 +5,174 @@
 namespace Core\AssetManager;
 
 use Cache\CachePoolTrait;
-use Core\Asset\{Image, Type};
-use Doctrine\ORM\{EntityManagerInterface, EntityRepository};
+use Core\AssetManager\Compiler\AssetValidationTrait;
+use Core\AssetManager\Exception\MissingAssetResolverException;
+use Core\Interface\LazyService;
+use Core\Asset\{ImageAsset, ScriptAsset, StyleAsset, Type};
 use Psr\Cache\CacheItemPoolInterface;
-use Symfony\Component\DependencyInjection\Attribute\Lazy;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Finder\Finder;
-use function Support\slug;
-use const Support\AUTO;
-use RuntimeException;
+use InvalidArgumentException;
 
-/**
- * @service
- */
-#[Lazy]
-class AssetManifest
+class AssetManifest implements LazyService
 {
-    use CachePoolTrait;
+    use CachePoolTrait, AssetValidationTrait;
 
     /** @var array<string, AssetDefinition> */
     private array $loaded = [];
 
-    private readonly EntityRepository $entity;
+    /**
+     * Maps `reference => name`.
+     *
+     * @var array<string,string>
+     */
+    private array $assetMap = [];
+
+    // private readonly EntityRepository $entity;
 
     final public function __construct(
-        private readonly AssetConfig               $config,
-        CacheItemPoolInterface                     $cache,
-        protected readonly ?EntityManagerInterface $database = null,
+        private readonly AssetConfig        $config,
+        ?CacheItemPoolInterface             $cache,
+        protected readonly ?LoggerInterface $logger = null,
+        // protected readonly ?EntityManagerInterface $database = null,
     ) {
-        $this->setCacheAdapter( $cache, 'manifest' );
+        $this->assignCacheAdapter( $cache, 'manifest' );
     }
 
     public function get( string $name ) : AssetDefinition
     {
+        $reference = $this->resolveAssetName( $name );
+
+        if ( isset( $this->loaded[$reference] ) ) {
+            return $this->loaded[$reference];
+        }
+
         if ( ! $this->hasCache( $name ) ) {
-            $this->discover( $name );
+            $this->resolve( $reference );
         }
 
-        return \unserialize( $this->getCache( $name ) );
+        $asset = \unserialize( (string) $this->getCache( $name ) );
+
+        \assert( $asset instanceof AssetDefinition );
+
+        $this->loaded[$reference] = $asset;
+
+        return $asset;
     }
 
-    final public function discover(
-        ?string $name = null,
-        ?Type   $type = null,
-    ) : void {
-        $config ??= $this->config;
-
-        // Discover all
-        if ( ! $name && ! $type ) {
-            $this->scan( $config );
-        }
-
-        if ( $name ) {
-            $type ??= Type::from( $name );
-            $name = $this->nameFromPath( $name, $type );
-        }
-
-        if ( $type === Type::IMAGE ) {
-            $this->scanImages( $config );
-            return;
-        }
-
-        if ( $config->hasReference( $name ) ) {
-            // It is the AssetManagers job to resolve path-to-reference
-        }
-
-        dump( \get_defined_vars() );
-    }
-
-    final public function scan( ?AssetConfig $config = AUTO ) : void
+    final protected function resolve( string $asset ) : void
     {
-        $scanned = [];
-        $config ??= $this->config;
-
-        $assets = $config->resolve();
-
-        foreach ( $assets as $registration ) {
-            match ( $registration->type ) {
-                Type::IMAGE => $this->scanImages( $config ),
-                default     => null,
-            };
-        }
-        // dump( $assets );
+        match ( Type::from( $asset ) ) {
+            Type::IMAGE  => $this->resolveImage( $asset ),
+            Type::STYLE  => $this->resolveStyle( $asset ),
+            Type::SCRIPT => $this->resolveScript( $asset ),
+            default      => throw new MissingAssetResolverException( $asset ),
+        };
     }
 
-    final public function scanImages( AssetConfig $config ) : void
+    final public function scan( Type $type ) : void
     {
-        $type        = Type::IMAGE;
-        $directory   = $config->resolve()['image']->getSource();
-        $extenstions = $type->extensions();
+        match ( $type ) {
+            Type::IMAGE => $this->resolveImage(),
+            default     => throw new InvalidArgumentException(),
+        };
+    }
 
-        $finder = Finder::create()
-            ->files()
-            ->in( $directory );
+    final protected function resolveImage( ?string $asset = null ) : void
+    {
+        $extenstions = Type::IMAGE->extensions();
 
-        foreach ( $finder as $file ) {
-            $ext = $file->getExtension();
-
-            if ( ! \in_array( $ext, $extenstions ) ) {
+        foreach ( $this->find( Type::IMAGE ) as $file ) {
+            //
+            // Filter
+            if ( ! \in_array( $file->getExtension(), $extenstions ) ) {
                 continue;
             }
 
-            $name = $this->nameFromPath( $file->getPathname(), $type );
-            $path = $file->getPathname();
+            $name = $this->getName( $file->getPathname() );
 
-            $asset = new Image( $name, $path );
+            if ( $asset && $asset !== $name ) {
+                continue;
+            }
 
-            $this->setCache( $name, \serialize( $asset ) );
-            // $this->loaded[$name] = ;
+            $this->setCache( $name, \serialize( new ImageAsset( $name, $file->getPathname() ) ) );
         }
     }
 
-    // final protected function getRepository() : EntityRepository
-    // {
-    //     if ( ! $this->database ) {
-    //         throw new RuntimeException( 'No Database' );
-    //     }
-    //     return $this->entity ??= $this->database->getRepository( AssetReference::class );
-    // }
-
-    private function nameFromPath( string $path, Type $type ) : string
+    final protected function resolveStyle( ?string $asset = null ) : void
     {
-        $usePath = \str_replace( ['\\', '/'], '/', $path );
+        if ( $asset && $this->config->hasReference( $asset ) ) {
+            $reference  = $this->config->getReference( $asset );
+            $definition = new StyleAsset(
+                $reference->name,
+                $reference->getSource(),
+                $reference->meta,
+            );
+            $this->setCache( $reference->name, \serialize( $definition ) );
 
-        if ( ! \str_contains( $usePath, '/' ) ) {
-            return $path;
+            return;
         }
 
-        $usePath    = \strrchr( $usePath, '.', true ) ?: $usePath;
-        $typeName   = $type->name();
-        $fromSource = "assets/{$typeName}";
+        dd( 'TODO: Loop over all possible Style assets for global discovery scan.' );
+    }
 
-        $strpos = \strpos( $usePath, $fromSource ) + \strlen( $fromSource );
+    final protected function resolveScript( ?string $asset = null ) : void
+    {
+        if ( $asset && $this->config->hasReference( $asset ) ) {
+            $reference  = $this->config->getReference( $asset );
+            $definition = new ScriptAsset(
+                    $reference->name,
+                    $reference->getSource(),
+                    $reference->meta,
+            );
+            $this->setCache( $reference->name, \serialize( $definition ) );
 
-        $trimmed = \substr( $usePath, $strpos );
-
-        $name = \trim( \strstr( $trimmed, '/' ) ?: $trimmed, " \n\r\t\v\0/." );
-
-        if ( \str_contains( $name, '/' ) ) {
-            [$dir, $name] = \explode( '/', $name, 2 );
-            $dir          = \str_replace( ['\\', '/'], '.', $dir );
-            $assetName    = "{$typeName}.{$dir}.".slug( $name );
+            return;
         }
-        else {
-            $assetName = "{$typeName}.".slug( $name );
+        // $extenstions = Type::IMAGE->extensions();
+        //
+        // foreach ( $this->find( Type::IMAGE ) as $file ) {
+        //     //
+        //     // Filter
+        //     if ( ! \in_array( $file->getExtension(), $extenstions ) ) {
+        //         continue;
+        //     }
+        //
+        //     $name = $this->getName( $file->getPathname() );
+        //
+        //     if ( $asset && $asset !== $name ) {
+        //         continue;
+        //     }
+        //
+        //     $this->setCache( $name, \serialize( new Image( $name, $file->getPathname() ) ) );
+        // }
+    }
+
+    /**
+     * @param string|string[]|Type $files
+     *
+     * @return Finder
+     */
+    private function find( string|array|Type $files ) : Finder
+    {
+        $directories = $files instanceof Type
+                ? $this->config->getReference( $files->name() )->getSource()
+                : $files;
+
+        return Finder::create()
+            ->files()
+            ->in( $directories );
+    }
+
+    private function resolveAssetName( string $from ) : string
+    {
+        // ? Load and cached map
+        $this->assetMap ??= ['hash' => 'type.load-asset-map'];
+
+        if ( isset( $this->assetMap[$from] ) ) {
+            return $this->assetMap[$from];
         }
 
-        \assert(
-            \ctype_alnum( \str_replace( ['.', '-'], '', $assetName ) ),
-            "AssetReference names must only contain ASCII letters, numbers, periods, and hyphens. '{$assetName}' provided.",
-        );
-
-        return $assetName;
+        return $this->getName( $from );
     }
 }

@@ -19,7 +19,7 @@ use UnitEnum;
 /**
  * @property-read ImageMeta $meta
  */
-final class Image extends AssetDefinition
+final class ImageAsset extends AssetDefinition
 {
     public const Type TYPE = Type::IMAGE;
 
@@ -37,8 +37,9 @@ final class Image extends AssetDefinition
     public function __construct(
         string                 $name,
         public readonly string $source,
+        ?ImageMeta             $meta = null,
     ) {
-        parent::__construct( $name );
+        parent::__construct( $name, $meta );
 
         $this->aspect      = Aspect::from( $this->source );
         $this->orientation = $this->aspect->orientation;
@@ -49,7 +50,7 @@ final class Image extends AssetDefinition
         if ( $asPicture ) {
             return new Element( 'picture', [...$this->getPictureSources(), $this->element()] );
         }
-        return $this->element;
+        return $this->element();
     }
 
     public function element(
@@ -384,5 +385,17 @@ final class Image extends AssetDefinition
             'aspect'      => $this->aspect,
             'orientation' => $this->orientation,
         ];
+    }
+
+    protected function initialize() : void {}
+
+    public function getSourcePath() : string
+    {
+        return $this->source;
+    }
+
+    public function getSourceUrl( bool $version = false ) : string
+    {
+        return $this->getFallbackSource().( $version ? "?v={$this->assetID}" : '' );
     }
 }
