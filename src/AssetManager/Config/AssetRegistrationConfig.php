@@ -47,7 +47,7 @@ final class AssetRegistrationConfig
         string                             $name,
         string|array                       $source = [],
         string|array|ReferenceConfigurator $service = [],
-        ?bool                              $prefersInline = AUTO,
+        bool                               $prefersInline = false,
     ) : self {
         $name  = $this->assetName( $name, Type::STYLE );
         $asset = $this->assetRegistration( $name );

@@ -18,6 +18,8 @@ use UnitEnum;
 use function Support\{key_hash};
 use const Time\HOUR_4;
 
+// TODO: [hi] move to `northrook/assets`
+
 abstract class AssetDefinition implements AssetInterface
 {
     use CachePoolTrait, SettingsAccessor, AssetValidationTrait;
@@ -72,7 +74,7 @@ abstract class AssetDefinition implements AssetInterface
         $this->logger     ??= $logger;
 
         $this->assignCacheAdapter(
-            cache      : $cache,
+            adapter    : $cache,
             prefix     : 'manifest',
             defer      : $this->getSetting( 'asset.cache.defer', true ),
             expiration : $this->getSetting( 'asset.cache.expiration', HOUR_4 ),
@@ -101,8 +103,10 @@ abstract class AssetDefinition implements AssetInterface
         $this->assetID ??= $assetID ?? key_hash( 'xxh32', $this::class, $this->name, $this->meta );
 
         \assert(
-            $this->isAssetID( $this->assetID, $message ),
-            $message,
+            $this->isAssetID( $this->assetID ),
+            'Asset ID must be 16 alphanumeric characters; ['.\strlen(
+                $this->assetID,
+            )."] '{$this->assetID}' given",
         );
 
         return $this;

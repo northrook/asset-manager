@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpClassCanBeReadonlyInspection */
-
 namespace Core\AssetManager;
 
 use Cache\CachePoolTrait;
@@ -80,12 +78,12 @@ class AssetManifest implements LazyService
 
     final protected function resolveImage( ?string $asset = null ) : void
     {
-        $extenstions = Type::IMAGE->extensions();
+        $extensions = Type::IMAGE->extensions();
 
         foreach ( $this->find( Type::IMAGE ) as $file ) {
             //
             // Filter
-            if ( ! \in_array( $file->getExtension(), $extenstions ) ) {
+            if ( ! \in_array( $file->getExtension(), $extensions ) ) {
                 continue;
             }
 
@@ -113,6 +111,12 @@ class AssetManifest implements LazyService
             return;
         }
 
+        // $extensions = Type::STYLE->extensions();
+
+        foreach ( $this->find( Type::STYLE ) as $file ) {
+            dump( $file->getPathname() );
+        }
+
         dd( 'TODO: Loop over all possible Style assets for global discovery scan.' );
     }
 
@@ -121,31 +125,22 @@ class AssetManifest implements LazyService
         if ( $asset && $this->config->hasReference( $asset ) ) {
             $reference  = $this->config->getReference( $asset );
             $definition = new ScriptAsset(
-                    $reference->name,
-                    $reference->getSource(),
-                    $reference->meta,
+                $reference->name,
+                $reference->getSource(),
+                $reference->meta,
             );
             $this->setCache( $reference->name, \serialize( $definition ) );
 
             return;
         }
-        // $extenstions = Type::IMAGE->extensions();
-        //
-        // foreach ( $this->find( Type::IMAGE ) as $file ) {
-        //     //
-        //     // Filter
-        //     if ( ! \in_array( $file->getExtension(), $extenstions ) ) {
-        //         continue;
-        //     }
-        //
-        //     $name = $this->getName( $file->getPathname() );
-        //
-        //     if ( $asset && $asset !== $name ) {
-        //         continue;
-        //     }
-        //
-        //     $this->setCache( $name, \serialize( new Image( $name, $file->getPathname() ) ) );
-        // }
+
+        // $extensions = Type::STYLE->extensions();
+
+        foreach ( $this->find( Type::SCRIPT ) as $file ) {
+            dump( $file->getPathname() );
+        }
+
+        dd( 'TODO: Loop over all possible Script assets for global discovery scan.' );
     }
 
     /**

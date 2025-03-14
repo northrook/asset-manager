@@ -13,6 +13,7 @@ use Psr\Cache\CacheItemPoolInterface;
 use Stringable;
 use UnitEnum;
 use function Support\{file_save, isPath};
+
 /**
  * @property-read StyleMeta $meta
  */
@@ -69,9 +70,6 @@ final class StyleAsset extends AssetDefinition implements MinifiedAssetInterface
                 }
                 elseif ( \file_exists( $source ) ) {
                     $this->getMinifier()->setSource( $source );
-                }
-                else {
-                    $this->logger?->notice( 'Source {source} does not exist.', ['source' => $source] );
                 }
             }
             else {

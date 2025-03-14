@@ -8,7 +8,6 @@ use Core\AssetManager\Config\AssetRegistration;
 use InvalidArgumentException;
 use Stringable;
 use function Support\{isPath, slug};
-use const Support\AUTO;
 
 trait AssetValidationTrait
 {
@@ -52,16 +51,8 @@ trait AssetValidationTrait
         return "{$type}.{$name}";
     }
 
-    protected function isAssetID( string $string, ?string &$message = AUTO ) : bool
+    protected function isAssetID( string $string ) : bool
     {
-        if ( \strlen( $string ) === 8 && \ctype_alnum( $string ) ) {
-            return true;
-        }
-
-        if ( ! $message ) {
-            $length  = \strlen( $string );
-            $message = "Asset ID must be 16 alphanumeric characters; [{$length}] '{$string}' given";
-        }
         return \strlen( $string ) === 8 && \ctype_alnum( $string );
     }
 
