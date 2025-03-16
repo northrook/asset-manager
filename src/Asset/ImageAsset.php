@@ -12,6 +12,7 @@ use Support\Image\{Aspect, Blurhash, Orientation};
 use InvalidArgumentException;
 use Stringable;
 use Support\Image;
+use function Support\{str_after, str_before};
 use const Support\AUTO;
 use const Time\HOUR_4;
 use UnitEnum;
@@ -43,8 +44,6 @@ final class ImageAsset extends AssetDefinition
 
         $this->aspect      = Aspect::from( $this->source );
         $this->orientation = $this->aspect->orientation;
-
-        dump( $this );
     }
 
     public function getHtml( bool $asPicture = true ) : Stringable
@@ -163,6 +162,27 @@ final class ImageAsset extends AssetDefinition
         }
 
         return $sources;
+    }
+
+    public function generateImage( string $path ) : string
+    {
+        $savePath = $this->pathfinder->get( "dir.public/{$path}" );
+
+        if ( ! \str_contains( $path, '~' ) ) {
+            $path = $this->getSourceUrl();
+        }
+
+        $sizes = \trim( str_before( str_after( $path, '~' ), '.' ), '~' );
+
+        [$width, $height] = \explode( 'x', $sizes );
+
+        $this->createScaledFile(
+            $savePath,
+            $width,
+            $height,
+        );
+
+        return $path;
     }
 
     /**
