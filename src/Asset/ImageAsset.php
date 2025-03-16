@@ -182,7 +182,7 @@ final class ImageAsset extends AssetDefinition
             $height,
         );
 
-        return $path;
+        return $savePath;
     }
 
     /**
