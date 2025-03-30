@@ -7,7 +7,7 @@ use Core\AssetManager\AssetDefinition;
 use Core\AssetManager\Config\AssetRegistration;
 use InvalidArgumentException;
 use Stringable;
-use function Support\{isPath, slug};
+use function Support\{is_path, slug};
 
 trait AssetValidationTrait
 {
@@ -27,7 +27,7 @@ trait AssetValidationTrait
             return $name;
         }
 
-        if ( isPath( $name ) ) {
+        if ( is_path( $name ) ) {
             // Normalize path to name structure
             $usePath = \trim( \str_replace( ['\\', '/'], '/', $name ), " \n\r\t\v\0/" );
 

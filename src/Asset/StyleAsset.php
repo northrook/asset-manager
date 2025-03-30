@@ -12,7 +12,7 @@ use Support\{StylesheetMinifier};
 use Psr\Cache\CacheItemPoolInterface;
 use Stringable;
 use UnitEnum;
-use function Support\{file_save, isPath};
+use function Support\{file_save, is_path};
 
 /**
  * @property-read StyleMeta $meta
@@ -63,10 +63,10 @@ final class StyleAsset extends AssetDefinition implements MinifiedAssetInterface
         }
 
         foreach ( $this->source as $source ) {
-            $isPath = isPath( $source );
+            $isPath = is_path( $source );
             if ( $isPath ) {
                 if ( \glob( $source ) ) {
-                    $this->getMinifier()->setSource( ...\glob( $source ) );
+                    $this->getMinifier()->setSource( ...\glob( $source ) ?: [] );
                 }
                 elseif ( \file_exists( $source ) ) {
                     $this->getMinifier()->setSource( $source );

@@ -18,16 +18,16 @@
   "prefer-stable": true,
   "require": {
     "php": ">=8.3",
+    "ext-gd": "*",
+    "ext-exif": "*",
+    "intervention/image": "^3.11",
+    "northrook/image": "dev-main",
     "northrook/core": "dev-main",
     "northrook/core-symfony": "dev-main",
     "northrook/pathfinder": "dev-main",
     "northrook/minify": "dev-main",
-    "voku/portable-ascii": "^2.0",
     "symfony/finder": "^7.2",
-    "ext-gd": "*",
-    "intervention/image": "^3.11",
-    "northrook/image": "dev-main",
-    "ext-exif": "*"
+    "voku/portable-ascii": "^2.0"
   },
   "require-dev": {
     "northrook/dev": "dev-main",

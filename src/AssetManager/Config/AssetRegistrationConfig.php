@@ -11,7 +11,7 @@ use Core\Pathfinder\Path;
 use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ReferenceConfigurator;
 use const Support\AUTO;
-use function Support\isRelativePath;
+use function Support\is_relative_path;
 
 /**
  * @internal
@@ -54,7 +54,7 @@ final class AssetRegistrationConfig
 
         /** @var string $path */
         foreach ( (array) $source as $path ) {
-            if ( isRelativePath( $path ) ) {
+            if ( is_relative_path( $path ) ) {
                 foreach ( $this->config->assetDirectories as $key ) {
                     $this->pathfinder->quiet = true;
 
@@ -144,7 +144,7 @@ final class AssetRegistrationConfig
 
         if ( $directoryPath ) {
             $path = match ( true ) {
-                isRelativePath( $directoryPath ) => $this->pathfinder->getPath( "dir.assets/{$directoryPath}" ),
+                is_relative_path( $directoryPath ) => $this->pathfinder->getPath( "dir.assets/{$directoryPath}" ),
                 default                          => $this->pathfinder->getPath( $directoryPath ),
             };
 
