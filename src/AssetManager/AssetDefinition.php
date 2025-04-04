@@ -65,6 +65,13 @@ abstract class AssetDefinition implements AssetInterface
         $this->meta = $meta ?? AssetRegistration::getDefaultMeta( $this->type );
     }
 
+    /**
+     * @param Pathfinder                  $pathfinder
+     * @param null|CacheItemPoolInterface $cache
+     * @param null|LoggerInterface        $logger
+     *
+     * @return self
+     */
     final public function setDependencies(
         Pathfinder              $pathfinder,
         ?CacheItemPoolInterface $cache = null,
@@ -89,15 +96,11 @@ abstract class AssetDefinition implements AssetInterface
         return $this;
     }
 
-    abstract protected function initialize() : void;
-
     /**
-     * @param null|array<array-key, ?string>|Attributes|scalar|UnitEnum ...$attributes
+     * @param null|string $assetID
+     *
+     * @return self
      */
-    abstract public function element(
-        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
-    ) : Element;
-
     final public function build( ?string $assetID = null ) : self
     {
         $this->assetID ??= $assetID ?? key_hash( 'xxh32', $this::class, $this->name, $this->meta );
@@ -111,6 +114,15 @@ abstract class AssetDefinition implements AssetInterface
 
         return $this;
     }
+
+    abstract protected function initialize() : void;
+
+    /**
+     * @param null|array<array-key, ?string>|Attributes|scalar|UnitEnum ...$attributes
+     */
+    abstract public function element(
+        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
+    ) : Element;
 
     public function getHtml() : Stringable
     {

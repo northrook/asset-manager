@@ -3,6 +3,7 @@ parameters:
 	paths:
 		- src
 		- vendor
+		- index.php
 	treatPhpDocTypesAsCertain: false
 	reportUnmatchedIgnoredErrors: false
 	checkExplicitMixedMissingReturn: true

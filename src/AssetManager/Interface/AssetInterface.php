@@ -3,22 +3,21 @@
 namespace Core\AssetManager\Interface;
 
 use Core\Asset\Type;
-use Core\Interface\ViewInterface;
 use Core\Pathfinder;
 use Core\View\Element;
 use Core\View\Element\Attributes;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use UnitEnum;
+use Stringable;
 
 /**
  * @property-read string $name
  * @property-read Type   $type
  * @property-read string $assetID
  */
-interface AssetInterface extends ViewInterface
+interface AssetInterface extends Stringable
 {
-
     /**
      * Set by the {@see AssetManifest}.
      *

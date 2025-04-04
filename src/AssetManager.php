@@ -15,6 +15,7 @@ use Core\AssetManager\{AssetConfig,
 };
 use Core\AssetManager\Interface\{AssetInterface, AssetServiceInterface};
 use Cache\CachePoolTrait;
+use Core\Asset\{ImageAsset, ScriptAsset, StyleAsset};
 use Core\Interface\LazyService;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\{LoggerAwareInterface, LoggerInterface};
@@ -63,6 +64,19 @@ class AssetManager implements LazyService, LoggerAwareInterface
     }
 
     /**
+     * An {@see AssetRegistration} is the base parameters set by {@see AssetConfig}.
+     *
+     * @param string|Stringable $from
+     *
+     * @return AssetRegistration
+     * @throws UnknownAssetRegistrationException
+     */
+    final public function getAssetRegistration( string|Stringable $from ) : AssetRegistration
+    {
+        return $this->config->getReference( $this->getName( $from ) );
+    }
+
+    /**
      * Retrieve and `build` an asset.
      *
      * Accepts:
@@ -87,16 +101,48 @@ class AssetManager implements LazyService, LoggerAwareInterface
     }
 
     /**
-     * An {@see AssetRegistration} is the base parameters set by {@see AssetConfig}.
+     * @param string      $asset
+     * @param null|string $assetID
      *
-     * @param string|Stringable $from
-     *
-     * @return AssetRegistration
-     * @throws UnknownAssetRegistrationException
+     * @return StyleAsset
      */
-    final public function getAssetRegistration( string|Stringable $from ) : AssetRegistration
-    {
-        return $this->config->getReference( $this->getName( $from ) );
+    final public function getStyle(
+        string  $asset,
+        ?string $assetID = null,
+    ) : StyleAsset {
+        $asset = $this->getAsset( $asset, $assetID );
+        \assert( $asset instanceof StyleAsset );
+        return $asset;
+    }
+
+    /**
+     * @param string      $asset
+     * @param null|string $assetID
+     *
+     * @return ScriptAsset
+     */
+    final public function getScript(
+        string  $asset,
+        ?string $assetID = null,
+    ) : ScriptAsset {
+        $asset = $this->getAsset( $asset, $assetID );
+        \assert( $asset instanceof ScriptAsset );
+        return $asset;
+    }
+
+    /**
+     * @param string      $asset
+     * @param null|string $assetID
+     *
+     * @return ImageAsset
+     */
+    final public function getImage(
+        string  $asset,
+        ?string $assetID = null,
+    ) : ImageAsset {
+        $asset = $this->getAsset( $asset, $assetID );
+        \assert( $asset instanceof ImageAsset );
+        return $asset;
     }
 
     /**
