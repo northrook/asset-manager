@@ -46,10 +46,20 @@ final class ImageAsset extends AssetDefinition
         $this->orientation = $this->aspect->orientation;
     }
 
-    public function getHtml( bool $asPicture = true ) : Stringable
-    {
+    public function getPicture(
+        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
+    ) : string {
+        return '<picture>'
+               .\implode( '', [...$this->getPictureSources(), $this->element( ...$attributes )] )
+               .'</picture>';
+    }
+
+    public function getHtml(
+        bool                                                    $asPicture = true,
+        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
+    ) : Stringable {
         if ( $asPicture ) {
-            return new Element( 'picture', [...$this->getPictureSources(), $this->element()] );
+            return new Element( 'picture', [...$this->getPictureSources(), $this->element( ...$attributes )] );
         }
         return $this->element();
     }
@@ -65,6 +75,7 @@ final class ImageAsset extends AssetDefinition
         $this->element = new Element( 'img', ...$attributes );
 
         $this->element->attributes->set( 'src', $this->getFallbackSource() );
+        $this->element->attributes->set( 'asset-id', $this->assetID );
         $this->element->attributes->style->add( $this->getBlurHashBackgroundStyle( aspectRatio : true ), true );
         $this->element->attributes->style->add( 'width: 100%; height: auto;' );
 
