@@ -127,7 +127,7 @@ final class ScriptAsset extends AssetDefinition implements MinifiedAssetInterfac
     public function getSourcePath() : string
     {
         return $this->path ??= $this->pathfinder->get(
-            "dir.public.assets/{$this->fileName( 'css' )}",
+            "dir.public.assets/{$this->fileName( 'js' )}",
         );
     }
 
