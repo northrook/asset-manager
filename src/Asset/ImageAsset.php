@@ -76,7 +76,6 @@ final class ImageAsset extends AssetDefinition
 
         $this->element->attributes->set( 'src', $this->getFallbackSource() );
         $this->element->attributes->set( 'asset-id', $this->assetID );
-        $this->element->attributes->style->add( $this->getBlurHashBackgroundStyle( aspectRatio : true ), true );
         $this->element->attributes->style->add( 'width: 100%; height: auto;' );
 
         return $this->element;
