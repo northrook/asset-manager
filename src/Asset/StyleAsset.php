@@ -7,11 +7,9 @@ use Core\AssetManager\Asset\InlinableAsset;
 use Core\AssetManager\AssetDefinition;
 use Core\AssetManager\Interface\{AssetMetaInterface, MinifiedAssetInterface};
 use Core\View\Element;
-use Core\View\Element\Attributes;
 use Support\{StylesheetMinifier};
 use Psr\Cache\CacheItemPoolInterface;
 use Stringable;
-use UnitEnum;
 use function Support\{file_save, is_path};
 
 /**
@@ -90,9 +88,8 @@ final class StyleAsset extends AssetDefinition implements MinifiedAssetInterface
         return $this;
     }
 
-    public function element(
-        string|Attributes|bool|int|array|float|UnitEnum|null ...$attributes,
-    ) : Element {
+    public function element( mixed ...$attributes ) : Element
+    {
         $this->compile();
 
         $this->element ??= $this->meta->prefersInline

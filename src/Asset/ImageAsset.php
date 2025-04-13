@@ -6,7 +6,6 @@ use Core\Asset\Meta\ImageMeta;
 use Core\AssetManager\{AssetDefinition};
 use Core\Pathfinder\Path;
 use Core\View\Element;
-use Core\View\Element\Attributes;
 use Intervention\Image\Interfaces\ImageInterface;
 use Support\Image\{Aspect, Blurhash, Orientation};
 use InvalidArgumentException;
@@ -15,7 +14,6 @@ use Support\Image;
 use function Support\{str_after, str_before};
 use const Support\AUTO;
 use const Time\HOUR_4;
-use UnitEnum;
 
 /**
  * @property-read ImageMeta $meta
@@ -46,17 +44,16 @@ final class ImageAsset extends AssetDefinition
         $this->orientation = $this->aspect->orientation;
     }
 
-    public function getPicture(
-        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
-    ) : string {
+    public function getPicture( mixed ...$attributes ) : string
+    {
         return '<picture>'
                .\implode( '', [...$this->getPictureSources(), $this->element( ...$attributes )] )
                .'</picture>';
     }
 
     public function getHtml(
-        bool                                                    $asPicture = true,
-        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
+        bool     $asPicture = true,
+        mixed ...$attributes,
     ) : Stringable {
         if ( $asPicture ) {
             return new Element( 'picture', [...$this->getPictureSources(), $this->element( ...$attributes )] );
@@ -64,9 +61,8 @@ final class ImageAsset extends AssetDefinition
         return $this->element();
     }
 
-    public function element(
-        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
-    ) : Element {
+    public function element( mixed ...$attributes ) : Element
+    {
         if ( $this->element ) {
             $this->element->attributes->merge( $attributes );
             return $this->element;
