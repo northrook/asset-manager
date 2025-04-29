@@ -88,7 +88,7 @@ final class StyleAsset extends AssetDefinition implements MinifiedAssetInterface
         return $this;
     }
 
-    public function element( mixed ...$attributes ) : Element
+    public function getElement( mixed ...$attributes ) : Element
     {
         $this->compile();
 

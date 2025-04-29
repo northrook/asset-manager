@@ -5,10 +5,8 @@ namespace Core\AssetManager\Interface;
 use Core\Asset\Type;
 use Core\Pathfinder;
 use Core\View\Element;
-use Core\View\Element\Attributes;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
-use UnitEnum;
 use Stringable;
 
 /**
@@ -47,18 +45,18 @@ interface AssetInterface extends Stringable
      */
     public function build( ?string $assetID = null ) : self;
 
+    public function getHtml() : string;
+
     /**
      * Return the HTML element for this Asset.
      *
      * Called when using {@see self::getHtml()} or cast to `string`.
      *
-     * @param null|array<array-key, ?string>|Attributes|scalar|UnitEnum ...$attributes
+     * @param mixed ...$attributes
      *
      * @return Element
      */
-    public function element(
-        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
-    ) : Element;
+    public function getElement( mixed ...$attributes ) : Element;
 
     /**
      * @return string

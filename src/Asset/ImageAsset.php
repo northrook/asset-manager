@@ -9,7 +9,6 @@ use Core\View\Element;
 use Intervention\Image\Interfaces\ImageInterface;
 use Support\Image\{Aspect, Blurhash, Orientation};
 use InvalidArgumentException;
-use Stringable;
 use Support\Image;
 use function Support\{str_after, str_before};
 use const Support\AUTO;
@@ -54,14 +53,14 @@ final class ImageAsset extends AssetDefinition
     public function getHtml(
         bool     $asPicture = true,
         mixed ...$attributes,
-    ) : Stringable {
+    ) : string {
         if ( $asPicture ) {
             return new Element( 'picture', [...$this->getPictureSources(), $this->element( ...$attributes )] );
         }
-        return $this->element();
+        return $this->getElement()->__toString();
     }
 
-    public function element( mixed ...$attributes ) : Element
+    public function getElement( mixed ...$attributes ) : Element
     {
         if ( $this->element ) {
             $this->element->attributes->merge( $attributes );

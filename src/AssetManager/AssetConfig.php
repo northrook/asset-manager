@@ -122,7 +122,7 @@ class AssetConfig implements LazyService
         foreach ( $configFile as $path ) {
             $config = $this->pathfinder->get( $path );
 
-            if ( \file_exists( $config ) ) {
+            if ( \file_exists( $config ) && \is_readable( $config ) ) {
                 ( require $config )( $this );
             }
         }

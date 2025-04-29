@@ -165,7 +165,7 @@ class AssetManifest implements LazyService
 
     private function resolveAssetName( string $from ) : string
     {
-        // ? Load and cached map
+        // ? Load and cache map
         $this->assetMap ??= ['hash' => 'type.load-asset-map'];
 
         if ( isset( $this->assetMap[$from] ) ) {

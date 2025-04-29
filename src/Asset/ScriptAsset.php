@@ -88,7 +88,7 @@ final class ScriptAsset extends AssetDefinition implements MinifiedAssetInterfac
         return $this;
     }
 
-    public function element( mixed ...$attributes ) : Element
+    public function getElement( mixed ...$attributes ) : Element
     {
         $this->compile();
 

@@ -10,11 +10,8 @@ use Core\AssetManager\Interface\{AssetInterface, AssetMetaInterface};
 use Core\Pathfinder;
 use Core\Symfony\DependencyInjection\SettingsAccessor;
 use Core\View\Element;
-use Core\View\Element\Attributes;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\{LoggerAwareInterface, LoggerInterface};
-use Stringable;
-use UnitEnum;
 use function Support\{key_hash};
 use const Time\HOUR_4;
 
@@ -118,15 +115,13 @@ abstract class AssetDefinition implements AssetInterface
     abstract protected function initialize() : void;
 
     /**
-     * @param null|array<array-key, ?string>|Attributes|scalar|UnitEnum ...$attributes
+     * @param mixed ...$attributes
      */
-    abstract public function element(
-        Attributes|array|null|bool|float|int|string|UnitEnum ...$attributes,
-    ) : Element;
+    abstract public function getElement( mixed ...$attributes ) : Element;
 
-    public function getHtml() : Stringable
+    public function getHtml() : string
     {
-        return $this->element()->getHtml();
+        return $this->getElement()->__toString();
     }
 
     public function getVersion() : string
@@ -136,7 +131,7 @@ abstract class AssetDefinition implements AssetInterface
 
     final public function __toString() : string
     {
-        return (string) $this->getHtml();
+        return $this->getHtml();
     }
 
     final public function __serialize() : array
